@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "mcp-git-audit": {
+      "command": "node",
+      "args": ["/path/to/mcp-git-audit/dist/mcp-server/index.js"],
+      "env": {
+        "MCP_GIT_AUDIT_SAFE_ROOTS": "/path/to/your/code-root:/path/to/another-root"
+      }
+    }
+  }
+}
