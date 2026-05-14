@@ -12,6 +12,7 @@ const LOG_SEP = '<<<MGA-SEP>>>'
 
 export interface RepoStatus {
   path: string
+  abs_path: string
   group: string
   name: string
   branch: string
@@ -113,6 +114,7 @@ export const auditRepo = async (repo: ScannedRepo): Promise<{ ok: true; status: 
       ok: true,
       status: {
         path: repo.path,
+        abs_path: repo.abs_path,
         group: repo.group,
         name: repo.name,
         branch,

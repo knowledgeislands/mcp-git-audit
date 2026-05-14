@@ -2,6 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import { auditScan } from '../../audit.js'
 import { SAFE_ROOTS } from '../../config.js'
+import { repoDetail } from '../../detail.js'
 import { type ScanResult, scanRoot } from '../../scan.js'
 import { READ_ONLY } from '../../utils/annotations.js'
 import { errMessage } from '../../utils/errors.js'
@@ -49,6 +50,17 @@ const auditInput = z
       .strict()
       .describe('A previous scan result. Every repo `abs_path` is revalidated against MCP_GIT_AUDIT_SAFE_ROOTS before any `git` call is made.'),
     include_stale_days: z.number().int().min(1).default(30).describe('Reserved — currently unused; the consumer computes stale itself.')
+  })
+  .strict()
+
+const detailInput = z
+  .object({
+    abs_path: z.string().min(1).describe('Absolute path to a git repo, taken from a prior `scan`/`audit` result. Revalidated against MCP_GIT_AUDIT_SAFE_ROOTS before any `git` call.'),
+    commits: z.number().int().min(1).max(50).default(10).describe('How many recent commits to return (newest first). Hard cap 50.'),
+    include_diffstat: z
+      .boolean()
+      .default(false)
+      .describe('When true, include per-commit `diffstat[]` (added/removed/path) from `git log --numstat`. Slightly slower; `files` count is always returned.')
   })
   .strict()
 
@@ -121,6 +133,35 @@ Per-repo failures (e.g. corrupt .git/HEAD) are aggregated into the \`errors\` ar
         return jsonResult(await auditScan(validatedScan, { include_stale_days }))
       } catch (err) {
         return errorResult(`Error auditing: ${errMessage(err)}`)
+      }
+    }
+  )
+
+  server.registerTool(
+    'repo_detail',
+    {
+      title: 'Per-repo commit history and changed-file listing',
+      description: `Return commit history and working-tree status for a single repo identified by an absolute path from a prior \`scan\`/\`audit\` result. Read-only and cheap — no fetch, no diff content, no cross-repo work.
+
+\`abs_path\` is revalidated against MCP_GIT_AUDIT_SAFE_ROOTS before any \`git\` call; the cache cannot widen the security boundary.
+
+Args:
+  - abs_path (string): Absolute path to a git repo, must live inside one of MCP_GIT_AUDIT_SAFE_ROOTS.
+  - commits (number): Recent commits to return (newest first). Default 10, max 50.
+  - include_diffstat (boolean): When true, include per-commit \`diffstat[]\` from \`git log --numstat\`. Default false. \`files\` count is always returned.
+
+Returns:
+  JSON object: { abs_path, path, fetched_at, commits: [{ sha, subject, author, iso_date, rel_date, files, diffstat? }], working_tree: { modified: [{ status, path }], summary: { modified, untracked } }, error? } where each \`modified[]\` entry's \`status\` is the raw two-character \`git status --porcelain\` code.
+
+Status codes mirror \`git status --porcelain\` verbatim so downstream consumers other than the Cowork artifact can interpret them precisely. Errors (timeout, unborn HEAD on a fresh repo with no commits) surface as a \`commits: []\` result with an \`error\` field rather than throwing.`,
+      inputSchema: detailInput,
+      annotations: READ_ONLY
+    },
+    async ({ abs_path, commits, include_diffstat }) => {
+      try {
+        return jsonResult(await repoDetail(abs_path, { commits, include_diffstat }))
+      } catch (err) {
+        return errorResult(`Error reading repo detail: ${errMessage(err)}`)
       }
     }
   )

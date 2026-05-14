@@ -27,6 +27,7 @@ times without paying the walk cost again.
 | --- | --- |
 | `scan` | Walk a directory tree for `.git` directories and return repo metadata. No `git` calls. Cheap and cache-friendly. |
 | `audit` | Run per-repo `git` checks (branch, working-tree status, ahead/behind, last commit) over a prior scan result. |
+| `repo_detail` | Return commit history and working-tree file listing for a single repo. Read-only, no fetch. |
 
 ### `scan`
 
@@ -110,6 +111,53 @@ Errors:
 - `root "<X>" is not inside any configured safe_root (...)` — the supplied `root` (or any `abs_path` in `scan.repos`) escapes every entry in `MCP_GIT_AUDIT_SAFE_ROOTS`.
 - `root must be an absolute path or start with ~/: "<X>"` — relative paths are rejected.
 - `root is required when multiple safe_roots are configured (...)` — only omittable when exactly one safe root is configured.
+
+### `repo_detail`
+
+```json
+{
+  "name": "repo_detail",
+  "arguments": {
+    "abs_path": "/Users/me/dev/myrepo",
+    "commits": 10,
+    "include_diffstat": false
+  }
+}
+```
+
+#### Input
+
+| Name | Type | Default | Notes |
+| ---- | ---- | ------- | ----- |
+| `abs_path` | string | — | Absolute path to a git repo, taken from a prior `scan`/`audit` result. Revalidated against `MCP_GIT_AUDIT_SAFE_ROOTS` before any `git` call. |
+| `commits` | number | 10 | Recent commits to return, newest first. Hard cap 50. |
+| `include_diffstat` | boolean | false | When true, include per-commit `diffstat[]` (added/removed/path) from `git log --numstat`. `files` count is always returned. |
+
+#### Output
+
+```ts
+{
+  abs_path: string;
+  path: string;                       // relative to safe_root, forward slashes
+  fetched_at: string;                 // ISO-8601 UTC
+  commits: Array<{
+    sha: string;                      // short SHA
+    subject: string;
+    author: string;                   // name only
+    iso_date: string;                 // committer date, ISO-8601
+    rel_date: string;                 // e.g. "3 hours ago"
+    files: number;                    // count of files touched
+    diffstat?: Array<{ added: number; removed: number; path: string }>;  // present iff include_diffstat=true
+  }>;
+  working_tree: {
+    modified: Array<{ status: string; path: string }>;  // raw two-char git status --porcelain code
+    summary: { modified: number; untracked: number };
+  };
+  error?: string;                     // present on timeout or git failure; commits/working_tree still returned
+}
+```
+
+Timeout and per-call errors surface in the `error` field rather than throwing, so the artifact can degrade gracefully. A repo with no commits returns `commits: []` without an error.
 
 ## Configuration
 
