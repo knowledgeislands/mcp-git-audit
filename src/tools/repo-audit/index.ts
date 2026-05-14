@@ -3,9 +3,8 @@ import { z } from 'zod'
 import { auditScan } from '../../audit.js'
 import { SAFE_ROOTS } from '../../config.js'
 import { type ScanResult, scanRoot } from '../../scan.js'
+import { READ_ONLY } from '../../utils/annotations.js'
 import { errMessage, errorResult, jsonResult, resolveAgainstSafeRoots } from '../../utils.js'
-
-const READ_ONLY = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } as const
 
 const resolveRootArg = async (root: string | undefined): Promise<string | { error: string }> => {
   if (root === undefined) {

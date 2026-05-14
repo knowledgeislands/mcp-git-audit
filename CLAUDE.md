@@ -51,6 +51,7 @@ The codebase is TypeScript with ES modules (`"type": "module"` in `package.json`
 - `src/mcp-server/index.ts` - Entry point. Boots the MCP server and calls `registerRepoAuditTools(server)`.
 - `src/config.ts` - Loads and parses `MCP_GIT_AUDIT_SAFE_ROOTS` (colon-separated, defaults to `~` when unset or empty); exports the resolved `SAFE_ROOTS` constant.
 - `src/utils.ts` - `expandHome`, `resolveAgainstSafeRoots` (the security guard), `errorResult`/`jsonResult` helpers and the `isNodeError`/`errMessage` helpers.
+- `src/utils/annotations.ts` - MCP tool annotation presets (`READ_ONLY`).
 - `src/scan.ts` - Depth-limited repo discovery (`findRepos`) and the public `scanRoot()` that produces a `ScanResult` envelope.
 - `src/audit.ts` - Per-repo `git` calls (`auditRepo`) and `auditScan(scan, opts)` which maps a scan into an `AuditResult`. Per-repo failures are caught and aggregated into `errors[]`.
 - `src/tools/repo-audit/index.ts` - `registerRepoAuditTools(server)` registers both `scan` and `audit`.
@@ -105,6 +106,24 @@ Convention: `src/config.ts` calls `process.loadEnvFile('./.env.${NODE_ENV}')`
 at startup (try/caught), so the `dev:mcp` and `inspect` scripts pick up
 `.env.development` from the CWD. In production (Claude Desktop) `NODE_ENV` is
 unset and the env comes from the Desktop config `env` block.
+
+### Boot-time Checks
+
+- The server logs the resolved `MCP_GIT_AUDIT_SAFE_ROOTS` list before connecting the transport. Any tool call whose `root` lies outside those roots is rejected before any `git` invocation.
+
+## Security Requirements
+
+This server walks user-supplied filesystem trees and shells out to `git`. New tools and changes to existing tools must preserve every invariant below.
+
+1. **Every filesystem path runs through `resolveAgainstSafeRoots()`** from [src/utils.ts](./src/utils.ts) before any `fs.*` or `execFile` call. The check is two-layer: lexical normalization plus a `fs.realpath` of the deepest existing ancestor compared against the realpath of every safe root. This catches `..` traversal AND symlink escapes. Multi-root containment is essential — a future tool that takes a path argument must validate it against the **full** `SAFE_ROOTS` set, not against a single root.
+2. **Cached `scan` results are not trusted.** The `audit` tool revalidates **every** `abs_path` in the supplied scan against `SAFE_ROOTS` before any `git` invocation. A cache cannot widen the security boundary. New tools that accept a previous result as input must enforce the same revalidation discipline.
+3. **Git invocation uses `execFile` with argv array, never shell strings.** `runGit()` calls `execFile('git', ['--no-optional-locks', '-C', repo, ...args], opts)` — all user-influenced values pass as separate argv elements. No `exec`, no template strings, no shell metacharacter exposure. The `--no-optional-locks` flag is mandatory.
+4. **`git` calls are time- and memory-bounded.** Every `runGit()` invocation specifies `timeout` (8s) and `maxBuffer`. Optional commands (upstream presence, ahead/behind, branch when detached) go through `tryRunGit()` which swallows errors. New git operations must inherit these bounds — never spawn an unbounded `git` call.
+5. **Directory walks are depth-limited.** `findRepos()` in [src/scan.ts](./src/scan.ts) enforces `maxDepth` and prunes hidden dirs + `node_modules`. Symlink loops cannot exhaust resources because the walk only descends real directories under the depth cap. New walkers must enforce a depth cap.
+6. **Zod schemas are `.strict()` with bounded numerics.** All tool input schemas reject unknown fields; numeric inputs (e.g. `max_depth`) have explicit bounds. New schemas must continue this.
+7. **Per-repo failures don't crash the audit.** `audit` aggregates errors into `errors[]` rather than throwing. This is a contract with downstream consumers — preserve it.
+
+Tests covering safe-root rejection, symlink escape, and command-injection-via-argv live in [src/utils.test.ts](./src/utils.test.ts) and [src/audit.test.ts](./src/audit.test.ts).
 
 ## Common Setup Issues
 
