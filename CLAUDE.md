@@ -101,6 +101,11 @@ Output shape: see `README.md` and `src/audit.ts` (`AuditResult` / `RepoStatus`).
   `~/...` paths the tool is allowed to walk. Multiple entries are supported.
   Defaults to `~` (the user's home directory) when unset or empty. Tool calls
   must target a path equal to or inside one of these entries.
+- `MCP_GIT_AUDIT_AUDIT_LOG_PATH` (optional) - JSONL audit log path. Defaults to
+  `~/.local/state/mcp-git-audit/audit.jsonl`. The server only has read-only
+  tools, so logging is **off by default**; set `MCP_GIT_AUDIT_AUDIT_LOG_ALL=1`
+  to record every tool invocation as `{ts, server, tool, role, ok, duration_ms,
+  error?, args}`. See [src/utils/audit-log.ts](./src/utils/audit-log.ts).
 
 Convention: `src/config.ts` calls `process.loadEnvFile('./.env.${NODE_ENV}')`
 at startup (try/caught), so the `dev:mcp` and `inspect` scripts pick up

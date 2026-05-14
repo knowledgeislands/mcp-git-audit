@@ -28,3 +28,6 @@ const parseSafeRoots = (raw: string | undefined): readonly string[] => {
 }
 
 export const SAFE_ROOTS: readonly string[] = parseSafeRoots(process.env.MCP_GIT_AUDIT_SAFE_ROOTS)
+
+export const AUDIT_LOG_PATH: string = path.resolve(expandHome(process.env.MCP_GIT_AUDIT_AUDIT_LOG_PATH ?? path.join(os.homedir(), '.local', 'state', 'mcp-git-audit', 'audit.jsonl')))
+export const AUDIT_LOG_ALL: boolean = process.env.MCP_GIT_AUDIT_AUDIT_LOG_ALL === '1'
