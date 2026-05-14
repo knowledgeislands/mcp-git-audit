@@ -1,11 +1,10 @@
 /**
  * Append-only JSONL audit log for tool invocations.
  *
- * mcp-git-audit has only read-only tools, so by default nothing is logged
- * (matches the convention of the sibling MCPs, where auditor tools are off
- * by default). Set MCP_GIT_AUDIT_AUDIT_LOG_ALL=1 to log every invocation.
- * Path is configurable via MCP_GIT_AUDIT_AUDIT_LOG_PATH; defaults to
- * `~/.local/state/mcp-git-audit/audit.jsonl`.
+ * Scope is controlled by MCP_GIT_AUDIT_AUDIT_LOG: `off` (no logging), `writes`
+ * (default — but mcp-git-audit has no destructive tools, so nothing is logged)
+ * or `all` (every invocation). Path is configurable via
+ * MCP_GIT_AUDIT_AUDIT_LOG_PATH; defaults to `~/.local/state/mcp-git-audit/audit.jsonl`.
  *
  * Failures to write the audit line are swallowed (stderr only) — a broken log
  * must never prevent a tool call from completing.
@@ -13,7 +12,7 @@
 import * as fs from 'node:fs/promises'
 import * as path from 'node:path'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { AUDIT_LOG_ALL, AUDIT_LOG_PATH } from '../config.js'
+import { AUDIT_LOG_MODE, AUDIT_LOG_PATH } from '../config.js'
 
 export type Role = 'auditor' | 'cleaner'
 
@@ -39,10 +38,23 @@ const sanitizeArgs = (args: unknown): unknown => {
   return args
 }
 
+// Once per process, chmod the log to 0o600 after the first successful append
+// — covers logs created before this safeguard existed (which would otherwise
+// keep 0o644). `appendFile`'s `mode` option only applies on creation.
+let chmodEnsured = false
+
 export const appendAuditEvent = async (event: AuditEvent): Promise<void> => {
   try {
     await fs.mkdir(path.dirname(AUDIT_LOG_PATH), { recursive: true })
-    await fs.appendFile(AUDIT_LOG_PATH, `${JSON.stringify(event)}\n`, 'utf-8')
+    await fs.appendFile(AUDIT_LOG_PATH, `${JSON.stringify(event)}\n`, { encoding: 'utf-8', mode: 0o600 })
+    if (!chmodEnsured) {
+      try {
+        await fs.chmod(AUDIT_LOG_PATH, 0o600)
+      } catch {
+        // best-effort — log may have been rotated/removed between write and chmod
+      }
+      chmodEnsured = true
+    }
   } catch (err) {
     console.error(`[audit-log] failed to write: ${err instanceof Error ? err.message : String(err)}`)
   }
@@ -58,7 +70,8 @@ const extractErrorText = (result: unknown): string | undefined => {
 }
 
 export const withAuditLog = (toolName: string, role: Role, callback: ToolCallback): ToolCallback => {
-  if (role === 'auditor' && !AUDIT_LOG_ALL) return callback
+  if (AUDIT_LOG_MODE === 'off') return callback
+  if (role === 'auditor' && AUDIT_LOG_MODE !== 'all') return callback
   return async (...callbackArgs: unknown[]) => {
     const start = Date.now()
     const args = callbackArgs[0]

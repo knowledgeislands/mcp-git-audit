@@ -101,7 +101,7 @@ describe('repoDetail', () => {
     expect(result.commits.length).toBe(6)
   })
 
-  it('populates diffstat[] when include_diffstat=true; files matches diffstat.length', async () => {
+  it('populates diffstat[] when include_diffstat=true; files matches diffstat.length; binary files report 0/0', async () => {
     const result = await repoDetail(path.join(tmpRoot, 'active'), { commits: 3, include_diffstat: true })
     expect(result.commits.length).toBe(3)
     for (const c of result.commits) {
@@ -113,6 +113,13 @@ describe('repoDetail', () => {
         expect(d.path.length).toBeGreaterThan(0)
       }
     }
+    // The binary file in commit 6 surfaces as a numstat `-\t-\t<path>` row;
+    // confirm we coerce both counts to 0 rather than NaN.
+    const commit6 = result.commits.find((c) => c.subject === 'commit 6')
+    const binary = commit6?.diffstat?.find((d) => d.path === 'binary.bin')
+    expect(binary).toBeDefined()
+    expect(binary?.added).toBe(0)
+    expect(binary?.removed).toBe(0)
   })
 
   it('working_tree.modified length equals summary.modified + summary.untracked; status codes are raw porcelain', async () => {

@@ -34,11 +34,12 @@ Scripts:
 tree of local git repositories and returns a per-repo status payload (branch,
 working-tree state, ahead/behind upstream, last-commit metadata).
 
-The work is **split across two tools** so callers can cache the cheap part and
-re-run the expensive part on demand:
+The work is **split across three tools** so callers can cache the cheap part and
+re-run the expensive parts on demand:
 
 - `scan` — pure filesystem walk. Returns repo paths/groups/names. No `git` invocations.
 - `audit` — takes a `scan` result and runs the per-repo `git` calls.
+- `repo_detail` — drill-down for a single repo: recent commit history (with optional `--numstat` diffstat) and a `git status --porcelain` working-tree listing. Used by the `kis-repo-audit` Cowork artifact to render expanded rows.
 
 Every path the server touches is validated against `MCP_GIT_AUDIT_SAFE_ROOTS`,
 including each `abs_path` in a scan result re-supplied to `audit`. A cached
@@ -53,8 +54,9 @@ The codebase is TypeScript with ES modules (`"type": "module"` in `package.json`
 - `src/utils.ts` - `expandHome`, `resolveAgainstSafeRoots` (the security guard), `errorResult`/`jsonResult` helpers and the `isNodeError`/`errMessage` helpers.
 - `src/utils/annotations.ts` - MCP tool annotation presets (`READ_ONLY`).
 - `src/scan.ts` - Depth-limited repo discovery (`findRepos`) and the public `scanRoot()` that produces a `ScanResult` envelope.
-- `src/audit.ts` - Per-repo `git` calls (`auditRepo`) and `auditScan(scan, opts)` which maps a scan into an `AuditResult`. Per-repo failures are caught and aggregated into `errors[]`.
-- `src/tools/repo-audit/index.ts` - `registerRepoAuditTools(server)` registers both `scan` and `audit`.
+- `src/audit.ts` - Per-repo `git` calls (`auditRepo`) and `auditScan(scan, opts)` which maps a scan into an `AuditResult`. Per-repo failures are caught and aggregated into `errors[]`. Each entry carries the scan's `abs_path` through so consumers can re-invoke `repo_detail` without re-running `scan`.
+- `src/detail.ts` - `repoDetail(absPath, opts)` runs `git log --numstat` + `git status --porcelain=v1 -z` for one repo. Bounded by a 6s timeout, MAX_COMMITS = 50. Unborn HEAD (fresh `git init`) returns `commits: []` with no `error`; other failures surface as `{ commits: [], error }` envelopes rather than throwing.
+- `src/tools/repo-audit/index.ts` - `registerRepoAuditTools(server)` registers `scan`, `audit`, and `repo_detail`.
 - `src/tools/index.ts` - Barrel re-exporting the register functions (mirrors the sibling MCPs' pattern; new tool groups slot in here).
 
 ### Tools Exposed
@@ -63,6 +65,7 @@ The codebase is TypeScript with ES modules (`"type": "module"` in `package.json`
 | --- | --- |
 | `scan` | Walk a directory tree for `.git` directories and return repo metadata. Read-only, idempotent, **no `git` calls**. |
 | `audit` | Run per-repo `git` checks over a prior scan result. Read-only, idempotent. |
+| `repo_detail` | Per-repo follow-up: recent commit history (+ optional numstat diffstat) and a working-tree listing for a single `abs_path` from a prior scan/audit. Read-only, idempotent, no fetch. |
 
 #### `scan` input
 
@@ -80,7 +83,17 @@ Output shape: see `README.md` and `src/scan.ts` (`ScanResult` / `ScannedRepo`).
 | `scan` | object | — | A previous `scan` result: `{ root, scanned_at, repos: [{ path, abs_path, group, name }] }`. Every `abs_path` is revalidated against `MCP_GIT_AUDIT_SAFE_ROOTS` before any `git` call. |
 | `include_stale_days` | number | 30 | Reserved; passed through but currently unused. |
 
-Output shape: see `README.md` and `src/audit.ts` (`AuditResult` / `RepoStatus`). Per-repo failures land in `errors[]` rather than throwing.
+Output shape: see `README.md` and `src/audit.ts` (`AuditResult` / `RepoStatus`). Per-repo failures land in `errors[]` rather than throwing. Each repo entry includes `abs_path` so consumers can feed it into `repo_detail` without re-running `scan`.
+
+#### `repo_detail` input
+
+| Input | Type | Default | Notes |
+| ----- | ---- | ------- | ----- |
+| `abs_path` | string | — | Absolute path to a git repo from a prior `scan`/`audit` result. Revalidated against `MCP_GIT_AUDIT_SAFE_ROOTS` before any `git` call. |
+| `commits` | number | 10 | Recent commits to return (newest first). Hard cap 50. |
+| `include_diffstat` | boolean | false | When true, include per-commit `diffstat[]` (`{ added, removed, path }`) from `git log --numstat`. `files` count is always returned. |
+
+Output shape: see `README.md` and `src/detail.ts` (`RepoDetailResult`). Unborn HEAD on a freshly-init'd repo returns `commits: []` with no `error`. Other failures (corrupt HEAD, timeout) surface as a `commits: []` envelope with an `error` field rather than throwing.
 
 ### Key Components
 
@@ -101,11 +114,14 @@ Output shape: see `README.md` and `src/audit.ts` (`AuditResult` / `RepoStatus`).
   `~/...` paths the tool is allowed to walk. Multiple entries are supported.
   Defaults to `~` (the user's home directory) when unset or empty. Tool calls
   must target a path equal to or inside one of these entries.
-- `MCP_GIT_AUDIT_AUDIT_LOG_PATH` (optional) - JSONL audit log path. Defaults to
-  `~/.local/state/mcp-git-audit/audit.jsonl`. The server only has read-only
-  tools, so logging is **off by default**; set `MCP_GIT_AUDIT_AUDIT_LOG_ALL=1`
-  to record every tool invocation as `{ts, server, tool, role, ok, duration_ms,
-  error?, args}`. See [src/utils/audit-log.ts](./src/utils/audit-log.ts).
+- `MCP_GIT_AUDIT_AUDIT_LOG` (optional, default `writes`) - scope of the JSONL
+  audit log. `off` disables logging entirely; `writes` is the cross-repo
+  default but produces no output here because mcp-git-audit has only read-only
+  tools; `all` records every invocation as `{ts, server, tool, role, ok,
+  duration_ms, error?, args}`. Unknown values abort startup.
+- `MCP_GIT_AUDIT_AUDIT_LOG_PATH` (optional) - audit log file path. Defaults to
+  `~/.local/state/mcp-git-audit/audit.jsonl`. Created with mode `0o600`. See
+  [src/utils/audit-log.ts](./src/utils/audit-log.ts).
 
 Convention: `src/config.ts` calls `process.loadEnvFile('./.env.${NODE_ENV}')`
 at startup (try/caught), so the `dev:mcp` and `inspect` scripts pick up

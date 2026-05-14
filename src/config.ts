@@ -30,4 +30,19 @@ const parseSafeRoots = (raw: string | undefined): readonly string[] => {
 export const SAFE_ROOTS: readonly string[] = parseSafeRoots(process.env.MCP_GIT_AUDIT_SAFE_ROOTS)
 
 export const AUDIT_LOG_PATH: string = path.resolve(expandHome(process.env.MCP_GIT_AUDIT_AUDIT_LOG_PATH ?? path.join(os.homedir(), '.local', 'state', 'mcp-git-audit', 'audit.jsonl')))
-export const AUDIT_LOG_ALL: boolean = process.env.MCP_GIT_AUDIT_AUDIT_LOG_ALL === '1'
+
+/**
+ * Scope of tool invocations to record. mcp-git-audit is read-only, so the
+ * `writes` default never produces any output here; flip to `all` to record
+ * every invocation, or `off` to fully disable.
+ */
+export type AuditLogMode = 'off' | 'writes' | 'all'
+
+const parseAuditLogMode = (raw: string | undefined): AuditLogMode => {
+  const v = raw?.trim().toLowerCase()
+  if (v === undefined || v === '') return 'writes'
+  if (v === 'off' || v === 'writes' || v === 'all') return v
+  throw new Error(`Invalid MCP_GIT_AUDIT_AUDIT_LOG="${raw}" — expected one of: off, writes, all.`)
+}
+
+export const AUDIT_LOG_MODE: AuditLogMode = parseAuditLogMode(process.env.MCP_GIT_AUDIT_AUDIT_LOG)
