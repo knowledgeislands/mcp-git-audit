@@ -2,15 +2,9 @@
 
 [![CI](https://github.com/knowledgeislands/mcp-git-audit/actions/workflows/ci.yml/badge.svg)](https://github.com/knowledgeislands/mcp-git-audit/actions/workflows/ci.yml) [![npm version](https://img.shields.io/npm/v/@knowledgeislands/mcp-git-audit.svg)](https://www.npmjs.com/package/@knowledgeislands/mcp-git-audit) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-An MCP (Model Context Protocol) server that walks a tree of git repositories
-and returns branch, working-tree status, ahead/behind, and last-commit metadata
-for each. Every walked path is validated against a configurable allow-list of
-safe roots, so the server cannot reach into directories outside that allow-list
-— even if asked to.
+An MCP (Model Context Protocol) server that walks a tree of git repositories and returns branch, working-tree status, ahead/behind, and last-commit metadata for each. Every walked path is validated against a configurable allow-list of safe roots, so the server cannot reach into directories outside that allow-list — even if asked to.
 
-The work is split across two tools — `scan` (cheap filesystem walk) and `audit`
-(per-repo `git` checks) — so a single scan can be cached and re-audited many
-times without paying the walk cost again.
+The work is split across two tools — `scan` (cheap filesystem walk) and `audit` (per-repo `git` checks) — so a single scan can be cached and re-audited many times without paying the walk cost again.
 
 ## Features
 
@@ -23,11 +17,11 @@ times without paying the walk cost again.
 
 ## Available Tools
 
-| Tool | Description |
-| --- | --- |
-| `scan` | Walk a directory tree for `.git` directories and return repo metadata. No `git` calls. Cheap and cache-friendly. |
-| `audit` | Run per-repo `git` checks (branch, working-tree status, ahead/behind, last commit) over a prior scan result. |
-| `repo_detail` | Return commit history and working-tree file listing for a single repo. Read-only, no fetch. |
+| Tool          | Description                                                                                                      |
+| ------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `scan`        | Walk a directory tree for `.git` directories and return repo metadata. No `git` calls. Cheap and cache-friendly. |
+| `audit`       | Run per-repo `git` checks (branch, working-tree status, ahead/behind, last commit) over a prior scan result.     |
+| `repo_detail` | Return commit history and working-tree file listing for a single repo. Read-only, no fetch.                      |
 
 ### `scan`
 
@@ -41,7 +35,7 @@ times without paying the walk cost again.
 #### Input
 
 | Name | Type | Default | Notes |
-| ---- | ---- | ------- | ----- |
+| --- | --- | --- | --- |
 | `root` | string | — | Optional when exactly one entry is configured in `MCP_GIT_AUDIT_SAFE_ROOTS`. Otherwise required, and must equal or live inside one of those entries. |
 | `max_depth` | number | 2 | Max depth (from `root`) at which a repo directory may live. |
 
@@ -49,14 +43,14 @@ times without paying the walk cost again.
 
 ```ts
 {
-  root: string;                // resolved absolute root
-  scanned_at: string;          // ISO-8601 UTC
+  root: string // resolved absolute root
+  scanned_at: string // ISO-8601 UTC
   repos: Array<{
-    path: string;              // relative to root, forward slashes
-    abs_path: string;          // absolute path on disk
-    group: string;             // first path segment, or "(root)" for repos directly in root
-    name: string;              // last path segment
-  }>;
+    path: string // relative to root, forward slashes
+    abs_path: string // absolute path on disk
+    group: string // first path segment, or "(root)" for repos directly in root
+    name: string // last path segment
+  }>
 }
 ```
 
@@ -66,7 +60,13 @@ times without paying the walk cost again.
 {
   "name": "audit",
   "arguments": {
-    "scan": { "root": "/Users/me/dev", "scanned_at": "2026-05-14T...", "repos": [/* ... */] }
+    "scan": {
+      "root": "/Users/me/dev",
+      "scanned_at": "2026-05-14T...",
+      "repos": [
+        /* ... */
+      ]
+    }
   }
 }
 ```
@@ -74,7 +74,7 @@ times without paying the walk cost again.
 #### Input
 
 | Name | Type | Default | Notes |
-| ---- | ---- | ------- | ----- |
+| --- | --- | --- | --- |
 | `scan` | object | — | A previous result from the `scan` tool. Every `abs_path` is revalidated against `MCP_GIT_AUDIT_SAFE_ROOTS` before any `git` call. |
 | `include_stale_days` | number | 30 | Reserved — currently unused; the consumer computes stale itself. |
 
@@ -128,7 +128,7 @@ Errors:
 #### Input
 
 | Name | Type | Default | Notes |
-| ---- | ---- | ------- | ----- |
+| --- | --- | --- | --- |
 | `abs_path` | string | — | Absolute path to a git repo, taken from a prior `scan`/`audit` result. Revalidated against `MCP_GIT_AUDIT_SAFE_ROOTS` before any `git` call. |
 | `commits` | number | 10 | Recent commits to return, newest first. Hard cap 50. |
 | `include_diffstat` | boolean | false | When true, include per-commit `diffstat[]` (added/removed/path) from `git log --numstat`. `files` count is always returned. |
@@ -162,13 +162,10 @@ Timeout and per-call errors surface in the `error` field rather than throwing, s
 ## Configuration
 
 | Env var | Required | Notes |
-| ------- | -------- | ----- |
+| --- | --- | --- |
 | `MCP_GIT_AUDIT_SAFE_ROOTS` | no | Colon-separated list of absolute or `~/...` paths the tool is allowed to walk. May list several. Defaults to `~` (the user's home directory) when unset or empty. |
 
-Any `root` argument (and every `abs_path` re-supplied to `audit`) must equal or
-live inside one of the safe roots after `~` expansion and `realpath`-style
-normalisation; otherwise the call returns an error. When only one safe root is
-configured, `root` may be omitted on the `scan` call.
+Any `root` argument (and every `abs_path` re-supplied to `audit`) must equal or live inside one of the safe roots after `~` expansion and `realpath`-style normalisation; otherwise the call returns an error. When only one safe root is configured, `root` may be omitted on the `scan` call.
 
 ## Claude Desktop config
 

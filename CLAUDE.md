@@ -30,20 +30,15 @@ Scripts:
 
 ## Architecture Overview
 
-`mcp-git-audit` is a stdio MCP (Model Context Protocol) server that walks a
-tree of local git repositories and returns a per-repo status payload (branch,
-working-tree state, ahead/behind upstream, last-commit metadata).
+`mcp-git-audit` is a stdio MCP (Model Context Protocol) server that walks a tree of local git repositories and returns a per-repo status payload (branch, working-tree state, ahead/behind upstream, last-commit metadata).
 
-The work is **split across three tools** so callers can cache the cheap part and
-re-run the expensive parts on demand:
+The work is **split across three tools** so callers can cache the cheap part and re-run the expensive parts on demand:
 
 - `scan` — pure filesystem walk. Returns repo paths/groups/names. No `git` invocations.
 - `audit` — takes a `scan` result and runs the per-repo `git` calls.
 - `repo_detail` — drill-down for a single repo: recent commit history (with optional `--numstat` diffstat) and a `git status --porcelain` working-tree listing. Used by the `kis-repo-audit` Cowork artifact to render expanded rows.
 
-Every path the server touches is validated against `MCP_GIT_AUDIT_SAFE_ROOTS`,
-including each `abs_path` in a scan result re-supplied to `audit`. A cached
-scan **cannot** widen the security boundary.
+Every path the server touches is validated against `MCP_GIT_AUDIT_SAFE_ROOTS`, including each `abs_path` in a scan result re-supplied to `audit`. A cached scan **cannot** widen the security boundary.
 
 ### Source Layout
 
@@ -70,7 +65,7 @@ The codebase is TypeScript with ES modules (`"type": "module"` in `package.json`
 #### `scan` input
 
 | Input | Type | Default | Notes |
-| ----- | ---- | ------- | ----- |
+| --- | --- | --- | --- |
 | `root` | string | — | Optional when exactly one entry is configured in `MCP_GIT_AUDIT_SAFE_ROOTS`. Otherwise required, and must equal or live inside one of those entries. |
 | `max_depth` | number | 2 | Max depth (from `root`) at which a repo dir may live. |
 
@@ -79,7 +74,7 @@ Output shape: see `README.md` and `src/scan.ts` (`ScanResult` / `ScannedRepo`).
 #### `audit` input
 
 | Input | Type | Default | Notes |
-| ----- | ---- | ------- | ----- |
+| --- | --- | --- | --- |
 | `scan` | object | — | A previous `scan` result: `{ root, scanned_at, repos: [{ path, abs_path, group, name }] }`. Every `abs_path` is revalidated against `MCP_GIT_AUDIT_SAFE_ROOTS` before any `git` call. |
 | `include_stale_days` | number | 30 | Reserved; passed through but currently unused. |
 
@@ -88,7 +83,7 @@ Output shape: see `README.md` and `src/audit.ts` (`AuditResult` / `RepoStatus`).
 #### `repo_detail` input
 
 | Input | Type | Default | Notes |
-| ----- | ---- | ------- | ----- |
+| --- | --- | --- | --- |
 | `abs_path` | string | — | Absolute path to a git repo from a prior `scan`/`audit` result. Revalidated against `MCP_GIT_AUDIT_SAFE_ROOTS` before any `git` call. |
 | `commits` | number | 10 | Recent commits to return (newest first). Hard cap 50. |
 | `include_diffstat` | boolean | false | When true, include per-commit `diffstat[]` (`{ added, removed, path }`) from `git log --numstat`. `files` count is always returned. |
@@ -110,23 +105,13 @@ Output shape: see `README.md` and `src/detail.ts` (`RepoDetailResult`). Unborn H
 
 ### Environment Variables
 
-- `MCP_GIT_AUDIT_SAFE_ROOTS` (optional) - Colon-separated list of absolute or
-  `~/...` paths the tool is allowed to walk. Multiple entries are supported.
-  Defaults to `~` (the user's home directory) when unset or empty. Tool calls
-  must target a path equal to or inside one of these entries.
-- `MCP_GIT_AUDIT_AUDIT_LOG` (optional, default `writes`) - scope of the JSONL
-  audit log. `off` disables logging entirely; `writes` is the cross-repo
-  default but produces no output here because mcp-git-audit has only read-only
-  tools; `all` records every invocation as `{ts, server, tool, role, ok,
-  duration_ms, error?, args}`. Unknown values abort startup.
-- `MCP_GIT_AUDIT_AUDIT_LOG_PATH` (optional) - audit log file path. Defaults to
-  `~/.local/state/mcp-git-audit/audit.jsonl`. Created with mode `0o600`. See
-  [src/utils/audit-log.ts](./src/utils/audit-log.ts).
+- `MCP_GIT_AUDIT_SAFE_ROOTS` (optional) - Colon-separated list of absolute or `~/...` paths the tool is allowed to walk. Multiple entries are supported. Defaults to `~` (the user's home directory) when unset or empty. Tool calls must target a path equal to or inside one of these entries.
+- `MCP_GIT_AUDIT_AUDIT_LOG` (optional, default `writes`) - scope of the JSONL audit log. `off` disables logging entirely; `writes` is the cross-repo default but produces no output here because mcp-git-audit has only read-only tools; `all` records every invocation as `{ts, server, tool, role, ok, duration_ms, error?, args}`. Unknown values abort startup.
+- `MCP_GIT_AUDIT_AUDIT_LOG_PATH` (optional) - audit log file path. Defaults to `~/.local/state/mcp-git-audit/audit.jsonl`. Created with mode `0o600`. See [src/utils/audit-log.ts](./src/utils/audit-log.ts).
+- `MCP_GIT_AUDIT_AUDIT_LOG_MAX_BYTES` (optional, default `10485760` = 10 MiB) - size threshold for rotation. When the live log exceeds this after an append, it's renamed to `audit.jsonl.1` and older rotations shift up. `0` disables rotation.
+- `MCP_GIT_AUDIT_AUDIT_LOG_KEEP` (optional, default `5`) - number of rotated files to retain. Oldest beyond this is dropped. `0` truncates without preserving history.
 
-Convention: `src/config.ts` calls `process.loadEnvFile('./.env.${NODE_ENV}')`
-at startup (try/caught), so the `dev:mcp` and `inspect` scripts pick up
-`.env.development` from the CWD. In production (Claude Desktop) `NODE_ENV` is
-unset and the env comes from the Desktop config `env` block.
+Convention: `src/config.ts` calls `process.loadEnvFile('./.env.${NODE_ENV}')` at startup (try/caught), so the `dev:mcp` and `inspect` scripts pick up `.env.development` from the CWD. In production (Claude Desktop) `NODE_ENV` is unset and the env comes from the Desktop config `env` block.
 
 ### Boot-time Checks
 
@@ -149,12 +134,8 @@ Tests covering safe-root rejection, symlink escape, and command-injection-via-ar
 ## Common Setup Issues
 
 1. **Missing dependencies**: Run `npm install` first.
-2. **"root is not inside any configured safe_root"**: the supplied `root` (or
-   an `abs_path` in `scan.repos`) is outside every entry in
-   `MCP_GIT_AUDIT_SAFE_ROOTS`. Either add it to the env var (colon-separated)
-   or call with a path that lives inside an existing safe root.
-3. **No repos discovered**: confirm `max_depth` is large enough — by default
-   `scan` only walks two levels under `root`.
+2. **"root is not inside any configured safe_root"**: the supplied `root` (or an `abs_path` in `scan.repos`) is outside every entry in `MCP_GIT_AUDIT_SAFE_ROOTS`. Either add it to the env var (colon-separated) or call with a path that lives inside an existing safe root.
+3. **No repos discovered**: confirm `max_depth` is large enough — by default `scan` only walks two levels under `root`.
 
 ## Error Handling
 
