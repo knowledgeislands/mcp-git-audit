@@ -2,7 +2,7 @@ import * as fs from 'node:fs/promises'
 import * as os from 'node:os'
 import * as path from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { errMessage, errorResult, expandHome, isNodeError, jsonResult, resolveAgainstSafeRoots } from './utils.js'
+import { expandHome, resolveAgainstSafeRoots } from './paths.js'
 
 describe('expandHome', () => {
   it('expands a leading ~/ to the user home directory', () => {
@@ -15,47 +15,6 @@ describe('expandHome', () => {
 
   it('leaves a relative path unchanged', () => {
     expect(expandHome('foo/bar')).toBe('foo/bar')
-  })
-})
-
-describe('errorResult', () => {
-  it('builds the MCP error response shape', () => {
-    expect(errorResult('boom')).toEqual({ isError: true, content: [{ type: 'text', text: 'boom' }] })
-  })
-})
-
-describe('jsonResult', () => {
-  it('serialises a payload to pretty JSON in a text block', () => {
-    const r = jsonResult({ a: 1 })
-    expect(r.content[0].type).toBe('text')
-    expect(JSON.parse(r.content[0].text)).toEqual({ a: 1 })
-  })
-})
-
-describe('isNodeError', () => {
-  it('returns true for ENOENT-shaped errors', () => {
-    const e = Object.assign(new Error('x'), { code: 'ENOENT' })
-    expect(isNodeError(e)).toBe(true)
-  })
-
-  it('returns false for plain Error', () => {
-    expect(isNodeError(new Error('x'))).toBe(false)
-  })
-
-  it('returns false for non-Error values', () => {
-    expect(isNodeError('s')).toBe(false)
-    expect(isNodeError(null)).toBe(false)
-  })
-})
-
-describe('errMessage', () => {
-  it('returns the message for an Error', () => {
-    expect(errMessage(new Error('boom'))).toBe('boom')
-  })
-
-  it('stringifies non-Error values', () => {
-    expect(errMessage('boom')).toBe('boom')
-    expect(errMessage(42)).toBe('42')
   })
 })
 

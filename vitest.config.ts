@@ -24,7 +24,10 @@ export default defineConfig({
         // is exercised by `npm run inspect` and the smoke test in CI.
         'src/mcp-server/index.ts',
         'src/tools/index.ts',
-        'src/tools/**/index.ts'
+        'src/tools/**/index.ts',
+        // Pure data: annotation presets are referenced only from tool
+        // registration sites (which are themselves excluded).
+        'src/utils/annotations.ts'
       ],
       thresholds: {
         lines: 100,

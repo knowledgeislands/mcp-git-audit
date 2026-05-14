@@ -6,27 +6,6 @@ export const expandHome = (p: string): string => {
   return p.startsWith('~/') ? path.join(os.homedir(), p.slice(2)) : p
 }
 
-export const errorResult = (message: string) => {
-  return {
-    isError: true as const,
-    content: [{ type: 'text' as const, text: message }]
-  }
-}
-
-export const jsonResult = (payload: unknown) => {
-  return {
-    content: [{ type: 'text' as const, text: JSON.stringify(payload, null, 2) }]
-  }
-}
-
-export const isNodeError = (err: unknown): err is NodeJS.ErrnoException => {
-  return err instanceof Error && 'code' in err
-}
-
-export const errMessage = (err: unknown): string => {
-  return err instanceof Error ? err.message : String(err)
-}
-
 /**
  * Resolve a candidate root path and verify it lives inside one of the configured
  * safe_roots. Resolves symlinks where the path exists; falls back to the deepest

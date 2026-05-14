@@ -4,7 +4,9 @@ import { auditScan } from '../../audit.js'
 import { SAFE_ROOTS } from '../../config.js'
 import { type ScanResult, scanRoot } from '../../scan.js'
 import { READ_ONLY } from '../../utils/annotations.js'
-import { errMessage, errorResult, jsonResult, resolveAgainstSafeRoots } from '../../utils.js'
+import { errMessage } from '../../utils/errors.js'
+import { resolveAgainstSafeRoots } from '../../utils/paths.js'
+import { errorResult, jsonResult } from '../../utils/results.js'
 
 const resolveRootArg = async (root: string | undefined): Promise<string | { error: string }> => {
   if (root === undefined) {
