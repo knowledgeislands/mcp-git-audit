@@ -188,17 +188,17 @@ A copyable version of this is in [`claude-config-sample.json`](./claude-config-s
 ## Development
 
 ```bash
-npm install                       # install deps
-npm run dev:mcp                   # run from TS source, tsx watch mode
-npm run inspect                   # MCP Inspector against the dev server
-npm run test                      # vitest
-npm run test:coverage             # vitest + v8 coverage
-npm run typecheck                 # tsc --noEmit
-npm run lint:check                # Biome lint + format check
-npm run lint:fix                  # Biome auto-fix
-npm run lint:md                   # prettier + markdownlint for *.md
-npm run build                     # emit dist/
-npm run start:mcp                 # build + run from dist/
+bun install                       # install deps
+bun run server:mcp:dev            # bun --watch (NODE_ENV=development)
+bun run server:mcp:inspect        # MCP Inspector against the dev server
+bun run test                      # vitest (use `bun run`, not `bun test`)
+bun run test:coverage             # vitest + v8 coverage
+bun run lint:types                # tsc --noEmit
+bun run lint:check                # Biome lint + format check
+bun run lint:fix                  # Biome auto-fix
+bun run lint:md                   # prettier + markdownlint for *.md
+bun run build                     # emit dist/
+bun run server:mcp:start          # build + run from dist/ under node
 ```
 
 ## License
