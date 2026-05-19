@@ -11,10 +11,11 @@ import { errorResult, jsonResult } from '../../utils/results.js'
 
 const resolveRootArg = async (root: string | undefined): Promise<string | { error: string }> => {
   if (root === undefined) {
-    if (SAFE_ROOTS.length !== 1) {
+    const [sole] = SAFE_ROOTS
+    if (SAFE_ROOTS.length !== 1 || sole === undefined) {
       return { error: `root is required when multiple safe_roots are configured (${SAFE_ROOTS.join(', ')})` }
     }
-    return SAFE_ROOTS[0]
+    return sole
   }
   try {
     return await resolveAgainstSafeRoots(root, SAFE_ROOTS)

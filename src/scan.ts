@@ -21,9 +21,10 @@ export interface ScanOptions {
 
 const groupAndName = (relPath: string): { group: string; name: string } => {
   const parts = relPath.split('/').filter((p) => p.length > 0)
+  const first = parts[0] ?? ''
   /* v8 ignore next -- parts[0] is only undefined when relPath is empty (root-is-repo), which findRepos filters at depth 0. Defensive fallback. */
-  if (parts.length <= 1) return { group: '(root)', name: parts[0] ?? '' }
-  return { group: parts[0], name: parts[parts.length - 1] }
+  if (parts.length <= 1) return { group: '(root)', name: first }
+  return { group: first, name: parts[parts.length - 1] ?? first }
 }
 
 /**
