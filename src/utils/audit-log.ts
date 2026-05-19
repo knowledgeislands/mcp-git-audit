@@ -14,7 +14,7 @@ import * as path from 'node:path'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { AUDIT_LOG_KEEP, AUDIT_LOG_MAX_BYTES, AUDIT_LOG_MODE, AUDIT_LOG_PATH } from '../config.js'
 
-export type Role = 'auditor' | 'cleaner'
+export type Role = 'read' | 'write'
 
 export interface AuditEvent {
   ts: string
@@ -106,7 +106,7 @@ const extractErrorText = (result: unknown): string | undefined => {
 
 export const withAuditLog = (toolName: string, role: Role, callback: ToolCallback): ToolCallback => {
   if (AUDIT_LOG_MODE === 'off') return callback
-  if (role === 'auditor' && AUDIT_LOG_MODE !== 'all') return callback
+  if (role === 'read' && AUDIT_LOG_MODE !== 'all') return callback
   return async (...callbackArgs: unknown[]) => {
     const start = Date.now()
     const args = callbackArgs[0]
@@ -152,7 +152,7 @@ export const makeAuditedRegister = (server: McpServer): RegisterTool => {
     apply(target, thisArg, args: Parameters<RegisterTool>) {
       const name = args[0]
       const config = args[1] as { annotations?: { readOnlyHint?: boolean } } | undefined
-      const role: Role = config?.annotations?.readOnlyHint ? 'auditor' : 'cleaner'
+      const role: Role = config?.annotations?.readOnlyHint ? 'read' : 'write'
       const wrappedArgs = [...args] as Parameters<RegisterTool>
       const callback = wrappedArgs[2] as ToolCallback
       wrappedArgs[2] = withAuditLog(name, role, callback) as (typeof wrappedArgs)[2]

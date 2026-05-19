@@ -1,148 +1,45 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code when working in this repo. The user-facing tool surface, install/config, and Claude Desktop setup live in [README.md](./README.md); this file covers what Claude needs that isn't in README and isn't derivable from one grep.
 
-## Development Commands
+## Bun vs Node
 
-This project uses [Bun](https://bun.sh) (≥ 1.3) for dependency install and dev scripts. The published `dist/` bundle still runs under Node.js (≥ 22) — that's what Claude Desktop launches.
+This project uses Bun (≥ 1.3) for install and dev scripts, but the compiled `dist/` runs under Node (≥ 22) — that's what Claude Desktop launches.
 
-Two ways to run the server:
+- `bun run test` (NOT `bun test` — the latter invokes Bun's own runner instead of vitest).
+- Bun auto-loads `.env.${NODE_ENV}` from the CWD; Node needs the explicit `process.loadEnvFile()` call in [src/config.ts](./src/config.ts). The try/catch swallows the `TypeError` Bun raises (no `process.loadEnvFile`), so the same code works under both.
+- `NODE_ENV` is set to `development` only by `server:mcp:dev` and `server:mcp:inspect`. Claude Desktop doesn't set it, so `.env.*` is ignored in production — `MCP_GIT_AUDIT_SAFE_ROOTS` must come from the Claude Desktop config `env` block.
 
-- **From source (fast iteration, `bun --watch`)**: `bun run server:mcp:dev`
-- **From compiled `dist/` (what Claude Desktop runs, under node)**: `bun run server:mcp:start` (builds first, then runs)
+Run `bun run` with no args for the full script list.
 
-Scripts use a `<group>:<sub>:<action>` convention: `server:<type>:<action>` for runnable servers (generalizes to other server types in sibling repos), `lint:*` for code checks/formatting, `deps:*` for dependency management, `test:*` for vitest.
+## Architecture Invariants
 
-- `bun install` - **ALWAYS run first** to install dependencies
-- `bun run server:mcp:dev` - Run the MCP server from TS source under `bun --watch`
-- `bun run server:mcp:start` - Build and run the MCP server from compiled `dist/` under node
-- `bun run server:mcp:inspect` - Use MCP Inspector to test the server interactively (runs TS via bun)
-- `bun run build` - Compile TS to JS in `dist/` via `tsc` (uses `tsconfig.build.json`, excludes tests)
-- `bun run lint:types` - Type-check without emitting (`tsc --noEmit`)
-- `bun run test` - Run vitest tests (note: `bun run test`, not `bun test` — `bun test` invokes Bun's own runner). Use `bun run test:watch` for watch mode
-- `bun run lint:check` - Lint and format-check TS/JS/JSON with Biome
-- `bun run lint:fix` - Auto-fix Biome lint findings (with `--unsafe`) and apply formatting
-- `bun run lint:format` - Apply Biome formatting only (no lint)
-- `bun run lint:md` - Format and lint markdown files (prettier + markdownlint; Biome doesn't format markdown yet)
-- `bun run lint:package` - Format `package.json` with syncpack
-- `bun run deps:missing` - Add missing dependencies detected by depcheck
-- `bun run deps:unused` - Remove unused devDependencies detected by depcheck
-- `bun run deps:update` - Update all dependencies via `bun update`
-- `bun run clean` - Remove `dist/` and `node_modules/`
+### Naming convention
 
-## Architecture Overview
+Tool names follow `<app>_<resource>_<action>` (snake_case) with `<app>` = `git`. Plural resource for collection ops, singular for single-item ops. Current surface: `git_repos_scan`, `git_repos_audit`, `git_repo_detail`.
 
-`mcp-git-audit` is a stdio MCP (Model Context Protocol) server that walks a tree of local git repositories and returns a per-repo status payload (branch, working-tree state, ahead/behind upstream, last-commit metadata).
+### Read-only by design — no role gate
 
-The work is **split across three tools** so callers can cache the cheap part and re-run the expensive parts on demand:
+Every tool is read-only (`READ_ONLY` annotation from [src/utils/annotations.ts](./src/utils/annotations.ts)); there is no `roles.ts` and no `MCP_GIT_AUDIT_ROLES`. Audit-log infra wraps `server.registerTool` directly via `makeAuditedRegister` ([src/utils/audit-log.ts](./src/utils/audit-log.ts)) — the role recorded in each event is derived from `annotations.readOnlyHint` so the JSONL shape matches the sibling MCPs. If a future tool ever needs to mutate, port the annotation-based role gate from one of the other repos rather than reintroducing prefix dispatch.
 
-- `scan` — pure filesystem walk. Returns repo paths/groups/names. No `git` invocations.
-- `audit` — takes a `scan` result and runs the per-repo `git` calls.
-- `repo_detail` — drill-down for a single repo: recent commit history (with optional `--numstat` diffstat) and a `git status --porcelain` working-tree listing. Used by the `kis-repo-audit` Cowork artifact to render expanded rows.
+### Three-stage pipeline
 
-Every path the server touches is validated against `MCP_GIT_AUDIT_SAFE_ROOTS`, including each `abs_path` in a scan result re-supplied to `audit`. A cached scan **cannot** widen the security boundary.
-
-### Source Layout
-
-The codebase is TypeScript with ES modules (`"type": "module"` in `package.json`). Source lives under `src/`; compiled JS is emitted to `dist/` by `bun run build` (which delegates to `tsc -p tsconfig.build.json`).
-
-- `src/mcp-server/index.ts` - Entry point. Boots the MCP server and calls `registerRepoAuditTools(server)`.
-- `src/config.ts` - Loads and parses `MCP_GIT_AUDIT_SAFE_ROOTS` (colon-separated, defaults to `~` when unset or empty); exports the resolved `SAFE_ROOTS` constant.
-- `src/utils.ts` - `expandHome`, `resolveAgainstSafeRoots` (the security guard), `errorResult`/`jsonResult` helpers and the `isNodeError`/`errMessage` helpers.
-- `src/utils/annotations.ts` - MCP tool annotation presets (`READ_ONLY`).
-- `src/scan.ts` - Depth-limited repo discovery (`findRepos`) and the public `scanRoot()` that produces a `ScanResult` envelope.
-- `src/audit.ts` - Per-repo `git` calls (`auditRepo`) and `auditScan(scan, opts)` which maps a scan into an `AuditResult`. Per-repo failures are caught and aggregated into `errors[]`. Each entry carries the scan's `abs_path` through so consumers can re-invoke `repo_detail` without re-running `scan`.
-- `src/detail.ts` - `repoDetail(absPath, opts)` runs `git log --numstat` + `git status --porcelain=v1 -z` for one repo. Bounded by a 6s timeout, MAX_COMMITS = 50. Unborn HEAD (fresh `git init`) returns `commits: []` with no `error`; other failures surface as `{ commits: [], error }` envelopes rather than throwing.
-- `src/tools/repo-audit/index.ts` - `registerRepoAuditTools(server)` registers `scan`, `audit`, and `repo_detail`.
-- `src/tools/index.ts` - Barrel re-exporting the register functions (mirrors the sibling MCPs' pattern; new tool groups slot in here).
-
-### Tools Exposed
-
-| Tool | Description |
-| --- | --- |
-| `scan` | Walk a directory tree for `.git` directories and return repo metadata. Read-only, idempotent, **no `git` calls**. |
-| `audit` | Run per-repo `git` checks over a prior scan result. Read-only, idempotent. |
-| `repo_detail` | Per-repo follow-up: recent commit history (+ optional numstat diffstat) and a working-tree listing for a single `abs_path` from a prior scan/audit. Read-only, idempotent, no fetch. |
-
-#### `scan` input
-
-| Input | Type | Default | Notes |
-| --- | --- | --- | --- |
-| `root` | string | — | Optional when exactly one entry is configured in `MCP_GIT_AUDIT_SAFE_ROOTS`. Otherwise required, and must equal or live inside one of those entries. |
-| `max_depth` | number | 2 | Max depth (from `root`) at which a repo dir may live. |
-
-Output shape: see `README.md` and `src/scan.ts` (`ScanResult` / `ScannedRepo`).
-
-#### `audit` input
-
-| Input | Type | Default | Notes |
-| --- | --- | --- | --- |
-| `scan` | object | — | A previous `scan` result: `{ root, scanned_at, repos: [{ path, abs_path, group, name }] }`. Every `abs_path` is revalidated against `MCP_GIT_AUDIT_SAFE_ROOTS` before any `git` call. |
-| `include_stale_days` | number | 30 | Reserved; passed through but currently unused. |
-
-Output shape: see `README.md` and `src/audit.ts` (`AuditResult` / `RepoStatus`). Per-repo failures land in `errors[]` rather than throwing. Each repo entry includes `abs_path` so consumers can feed it into `repo_detail` without re-running `scan`.
-
-#### `repo_detail` input
-
-| Input | Type | Default | Notes |
-| --- | --- | --- | --- |
-| `abs_path` | string | — | Absolute path to a git repo from a prior `scan`/`audit` result. Revalidated against `MCP_GIT_AUDIT_SAFE_ROOTS` before any `git` call. |
-| `commits` | number | 10 | Recent commits to return (newest first). Hard cap 50. |
-| `include_diffstat` | boolean | false | When true, include per-commit `diffstat[]` (`{ added, removed, path }`) from `git log --numstat`. `files` count is always returned. |
-
-Output shape: see `README.md` and `src/detail.ts` (`RepoDetailResult`). Unborn HEAD on a freshly-init'd repo returns `commits: []` with no `error`. Other failures (corrupt HEAD, timeout) surface as a `commits: []` envelope with an `error` field rather than throwing.
-
-### Key Components
-
-- **Safe roots**: `SAFE_ROOTS` is resolved once at module load in `src/config.ts` from `process.env.MCP_GIT_AUDIT_SAFE_ROOTS`. `~` and `~/...` are expanded to the user home dir. Defaults to `[~]` when unset or empty.
-- **Path safety**: `resolveAgainstSafeRoots()` in `src/utils.ts` `~`-expands the input, rejects relative paths, calls `fs.realpath` on both the input and every safe root (or, for not-yet-existing paths, the deepest existing ancestor), and verifies containment. Rejects symlink-based escapes that a purely lexical check would miss.
-- **Audit revalidation**: the `audit` tool calls `resolveAgainstSafeRoots` for **every** `abs_path` in the supplied scan, before any `git` call. The cache cannot be used to point at paths outside `SAFE_ROOTS`.
-- **`git` invocations**: `runGit()` in `src/audit.ts` shells out via `execFile` with `--no-optional-locks`, an 8s timeout, and a bounded `maxBuffer`. Optional commands (upstream presence, ahead/behind counts, branch when detached) go through `tryRunGit()` which swallows errors and returns `null`, so they don't poison the whole result.
-- **Repo discovery**: `findRepos()` in `src/scan.ts` does a depth-limited walk; once a `.git` directory is found we record the parent and do **not** recurse further. Worktree-pointer `.git` files are skipped for v1. Hidden directories and `node_modules` are pruned.
-- **Output shape**: `auditScan()` returns `{ root, scanned_at, audited_at, repos[], errors? }`. Repos are sorted by group then name. The `errors[]` key is omitted entirely when every repo audits cleanly. The shape is a contract with downstream consumers — do not change without updating them.
-- **Error shape**: Tool errors return `{ isError: true, content: [{ type: 'text', text }] }` via `errorResult()`. Successful tools return JSON via `jsonResult()`.
-- **Transport**: `StdioServerTransport` from `@modelcontextprotocol/sdk`. Logs go to stderr (`console.error`) so they don't pollute the stdio MCP channel.
-
-## Configuration
-
-### Environment Variables
-
-- `MCP_GIT_AUDIT_SAFE_ROOTS` (optional) - Colon-separated list of absolute or `~/...` paths the tool is allowed to walk. Multiple entries are supported. Defaults to `~` (the user's home directory) when unset or empty. Tool calls must target a path equal to or inside one of these entries.
-- `MCP_GIT_AUDIT_AUDIT_LOG` (optional, default `writes`) - scope of the JSONL audit log. `off` disables logging entirely; `writes` is the cross-repo default but produces no output here because mcp-git-audit has only read-only tools; `all` records every invocation as `{ts, server, tool, role, ok, duration_ms, error?, args}`. Unknown values abort startup.
-- `MCP_GIT_AUDIT_AUDIT_LOG_PATH` (optional) - audit log file path. Defaults to `~/.local/state/mcp-git-audit/audit.jsonl`. Created with mode `0o600`. See [src/utils/audit-log.ts](./src/utils/audit-log.ts).
-- `MCP_GIT_AUDIT_AUDIT_LOG_MAX_BYTES` (optional, default `10485760` = 10 MiB) - size threshold for rotation. When the live log exceeds this after an append, it's renamed to `audit.jsonl.1` and older rotations shift up. `0` disables rotation.
-- `MCP_GIT_AUDIT_AUDIT_LOG_KEEP` (optional, default `5`) - number of rotated files to retain. Oldest beyond this is dropped. `0` truncates without preserving history.
-
-Convention: `src/config.ts` calls `process.loadEnvFile('./.env.${NODE_ENV}')` at startup (try/caught so a missing file is harmless — and harmless under Bun too, where `process.loadEnvFile` is undefined: the catch swallows the `TypeError` and Bun has already auto-loaded `.env.${NODE_ENV}` itself). The `server:mcp:dev` and `server:mcp:inspect` scripts set `NODE_ENV=development`, so `.env.development` is picked up from the CWD. Claude Desktop does not set `NODE_ENV`, so no `.env.*` file is loaded — env comes from the Desktop config `env` block in production.
-
-### Boot-time Checks
-
-- The server logs the resolved `MCP_GIT_AUDIT_SAFE_ROOTS` list before connecting the transport. Any tool call whose `root` lies outside those roots is rejected before any `git` invocation.
+`git_repos_scan` returns a `ScanResult` envelope that `git_repos_audit` consumes. The audit tool re-validates **every** `abs_path` in that envelope against `SAFE_ROOTS` before any `git` call — a cached scan cannot be used to widen the security boundary. `git_repo_detail` takes a single `abs_path` from a prior scan/audit and runs the same re-validation. Any new tool that accepts a previous result as input must enforce the same revalidation discipline.
 
 ## Security Requirements
 
-This server walks user-supplied filesystem trees and shells out to `git`. New tools and changes to existing tools must preserve every invariant below.
+This server walks user-supplied filesystem trees and shells out to `git`. New tools and changes to existing tools MUST preserve every invariant below.
 
-1. **Every filesystem path runs through `resolveAgainstSafeRoots()`** from [src/utils.ts](./src/utils.ts) before any `fs.*` or `execFile` call. The check is two-layer: lexical normalization plus a `fs.realpath` of the deepest existing ancestor compared against the realpath of every safe root. This catches `..` traversal AND symlink escapes. Multi-root containment is essential — a future tool that takes a path argument must validate it against the **full** `SAFE_ROOTS` set, not against a single root.
-2. **Cached `scan` results are not trusted.** The `audit` tool revalidates **every** `abs_path` in the supplied scan against `SAFE_ROOTS` before any `git` invocation. A cache cannot widen the security boundary. New tools that accept a previous result as input must enforce the same revalidation discipline.
-3. **Git invocation uses `execFile` with argv array, never shell strings.** `runGit()` calls `execFile('git', ['--no-optional-locks', '-C', repo, ...args], opts)` — all user-influenced values pass as separate argv elements. No `exec`, no template strings, no shell metacharacter exposure. The `--no-optional-locks` flag is mandatory.
-4. **`git` calls are time- and memory-bounded.** Every `runGit()` invocation specifies `timeout` (8s) and `maxBuffer`. Optional commands (upstream presence, ahead/behind, branch when detached) go through `tryRunGit()` which swallows errors. New git operations must inherit these bounds — never spawn an unbounded `git` call.
-5. **Directory walks are depth-limited.** `findRepos()` in [src/scan.ts](./src/scan.ts) enforces `maxDepth` and prunes hidden dirs + `node_modules`. Symlink loops cannot exhaust resources because the walk only descends real directories under the depth cap. New walkers must enforce a depth cap.
-6. **Zod schemas are `.strict()` with bounded numerics.** All tool input schemas reject unknown fields; numeric inputs (e.g. `max_depth`) have explicit bounds. New schemas must continue this.
-7. **Per-repo failures don't crash the audit.** `audit` aggregates errors into `errors[]` rather than throwing. This is a contract with downstream consumers — preserve it.
+1. **Every filesystem path runs through `resolveAgainstSafeRoots()`** from [src/utils.ts](./src/utils.ts) before any `fs.*` or `execFile` call. Two-layer check: lexical normalization plus `fs.realpath` of the deepest existing ancestor compared against the realpath of every safe root. Catches `..` traversal AND symlink escapes. New tools that take a path argument must validate against the **full** `SAFE_ROOTS` set, not a single root.
+2. **Cached `scan` results are not trusted.** See [Three-stage pipeline](#three-stage-pipeline) above.
+3. **`git` invocation uses `execFile` with argv array, never shell strings.** `runGit()` calls `execFile('git', ['--no-optional-locks', '-C', repo, ...args], opts)`. The `--no-optional-locks` flag is mandatory.
+4. **`git` calls are time- and memory-bounded.** Every `runGit()` invocation specifies `timeout` (8s) and `maxBuffer`. Optional commands go through `tryRunGit()` which swallows errors. Never spawn an unbounded `git` call.
+5. **Directory walks are depth-limited.** `findRepos()` in [src/scan.ts](./src/scan.ts) enforces `maxDepth` and prunes hidden dirs + `node_modules`. New walkers must enforce a depth cap.
+6. **Zod schemas are `.strict()` with bounded numerics.** Already true; new schemas must continue this.
+7. **Per-repo failures don't crash the audit.** `git_repos_audit` aggregates errors into `errors[]`. This is a contract with downstream consumers — preserve it.
 
-Tests covering safe-root rejection, symlink escape, and command-injection-via-argv live in [src/utils.test.ts](./src/utils.test.ts) and [src/audit.test.ts](./src/audit.test.ts).
+Traversal-rejection and command-injection-via-argv tests live in [src/utils.test.ts](./src/utils.test.ts) and [src/audit.test.ts](./src/audit.test.ts).
 
-## Common Setup Issues
+## Tool registration call sites
 
-1. **Missing dependencies**: Run `npm install` first.
-2. **"root is not inside any configured safe_root"**: the supplied `root` (or an `abs_path` in `scan.repos`) is outside every entry in `MCP_GIT_AUDIT_SAFE_ROOTS`. Either add it to the env var (colon-separated) or call with a path that lives inside an existing safe root.
-3. **No repos discovered**: confirm `max_depth` is large enough — by default `scan` only walks two levels under `root`.
-
-## Error Handling
-
-- Path escapes safe roots: `root "<X>" is not inside any configured safe_root (...)`
-- Relative `root`: `root must be an absolute path or start with ~/: "<X>"`
-- `root` omitted with multiple safe roots: `root is required when multiple safe_roots are configured (...)`
-- Per-repo failures appear in the response's `errors[]` array; the rest of the audit succeeds.
-- All other errors are surfaced as `Error scanning: <message>` or `Error auditing: <message>` via `errorResult()`.
+Tools are registered in [src/tools/repo-audit/index.ts](./src/tools/repo-audit/index.ts). To survey the surface, `grep "registerTool" src/tools/*/index.ts`. README's [Available Tools](./README.md#available-tools) tabulates them with purposes and I/O shapes.

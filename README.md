@@ -4,12 +4,12 @@
 
 An MCP (Model Context Protocol) server that walks a tree of git repositories and returns branch, working-tree status, ahead/behind, and last-commit metadata for each. Every walked path is validated against a configurable allow-list of safe roots, so the server cannot reach into directories outside that allow-list — even if asked to.
 
-The work is split across two tools — `scan` (cheap filesystem walk) and `audit` (per-repo `git` checks) — so a single scan can be cached and re-audited many times without paying the walk cost again.
+The work is split across two tools — `git_repos_scan` (cheap filesystem walk) and `git_repos_audit` (per-repo `git` checks) — so a single scan can be cached and re-audited many times without paying the walk cost again.
 
 ## Features
 
 - **Read-only by default** — both tools are flagged read-only and idempotent via MCP tool annotations.
-- **Split scan/audit pipeline** — `scan` does only the filesystem walk; `audit` consumes a scan result and runs the `git` calls. Cache the scan output and re-audit on demand.
+- **Split scan/audit pipeline** — `git_repos_scan` does only the filesystem walk; `git_repos_audit` consumes a scan result and runs the `git` calls. Cache the scan output and re-audit on demand.
 - **Path safety in two layers** — `~` expansion plus realpath normalisation, applied to every safe root, every `root` argument, and every `abs_path` re-supplied to `audit`. A cached scan cannot widen the security boundary.
 - **Per-call timeouts** — every `git` invocation is bounded (8s). One slow or broken repo can't stall the audit.
 - **Error isolation** — per-repo failures (e.g. a corrupt `.git/HEAD`) are aggregated into the result's `errors[]` rather than failing the whole call.
@@ -17,17 +17,17 @@ The work is split across two tools — `scan` (cheap filesystem walk) and `audit
 
 ## Available Tools
 
-| Tool          | Description                                                                                                      |
-| ------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `scan`        | Walk a directory tree for `.git` directories and return repo metadata. No `git` calls. Cheap and cache-friendly. |
-| `audit`       | Run per-repo `git` checks (branch, working-tree status, ahead/behind, last commit) over a prior scan result.     |
-| `repo_detail` | Return commit history and working-tree file listing for a single repo. Read-only, no fetch.                      |
+| Tool              | Description                                                                                                      |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `git_repos_scan`  | Walk a directory tree for `.git` directories and return repo metadata. No `git` calls. Cheap and cache-friendly. |
+| `git_repos_audit` | Run per-repo `git` checks (branch, working-tree status, ahead/behind, last commit) over a prior scan result.     |
+| `git_repo_detail` | Return commit history and working-tree file listing for a single repo. Read-only, no fetch.                      |
 
-### `scan`
+### `git_repos_scan`
 
 ```json
 {
-  "name": "scan",
+  "name": "git_repos_scan",
   "arguments": { "root": "~/dev", "max_depth": 2 }
 }
 ```
@@ -54,11 +54,11 @@ The work is split across two tools — `scan` (cheap filesystem walk) and `audit
 }
 ```
 
-### `audit`
+### `git_repos_audit`
 
 ```json
 {
-  "name": "audit",
+  "name": "git_repos_audit",
   "arguments": {
     "scan": {
       "root": "/Users/me/dev",
@@ -75,7 +75,7 @@ The work is split across two tools — `scan` (cheap filesystem walk) and `audit
 
 | Name | Type | Default | Notes |
 | --- | --- | --- | --- |
-| `scan` | object | — | A previous result from the `scan` tool. Every `abs_path` is revalidated against `MCP_GIT_AUDIT_SAFE_ROOTS` before any `git` call. |
+| `scan` | object | — | A previous result from the `git_repos_scan` tool. Every `abs_path` is revalidated against `MCP_GIT_AUDIT_SAFE_ROOTS` before any `git` call. |
 | `include_stale_days` | number | 30 | Reserved — currently unused; the consumer computes stale itself. |
 
 #### Output
@@ -112,11 +112,11 @@ Errors:
 - `root must be an absolute path or start with ~/: "<X>"` — relative paths are rejected.
 - `root is required when multiple safe_roots are configured (...)` — only omittable when exactly one safe root is configured.
 
-### `repo_detail`
+### `git_repo_detail`
 
 ```json
 {
-  "name": "repo_detail",
+  "name": "git_repo_detail",
   "arguments": {
     "abs_path": "/Users/me/dev/myrepo",
     "commits": 10,
@@ -129,7 +129,7 @@ Errors:
 
 | Name | Type | Default | Notes |
 | --- | --- | --- | --- |
-| `abs_path` | string | — | Absolute path to a git repo, taken from a prior `scan`/`audit` result. Revalidated against `MCP_GIT_AUDIT_SAFE_ROOTS` before any `git` call. |
+| `abs_path` | string | — | Absolute path to a git repo, taken from a prior `git_repos_scan`/`git_repos_audit` result. Revalidated against `MCP_GIT_AUDIT_SAFE_ROOTS` before any `git` call. |
 | `commits` | number | 10 | Recent commits to return, newest first. Hard cap 50. |
 | `include_diffstat` | boolean | false | When true, include per-commit `diffstat[]` (added/removed/path) from `git log --numstat`. `files` count is always returned. |
 
@@ -165,7 +165,7 @@ Timeout and per-call errors surface in the `error` field rather than throwing, s
 | --- | --- | --- |
 | `MCP_GIT_AUDIT_SAFE_ROOTS` | no | Colon-separated list of absolute or `~/...` paths the tool is allowed to walk. May list several. Defaults to `~` (the user's home directory) when unset or empty. |
 
-Any `root` argument (and every `abs_path` re-supplied to `audit`) must equal or live inside one of the safe roots after `~` expansion and `realpath`-style normalisation; otherwise the call returns an error. When only one safe root is configured, `root` may be omitted on the `scan` call.
+Any `root` argument (and every `abs_path` re-supplied to `git_repos_audit`) must equal or live inside one of the safe roots after `~` expansion and `realpath`-style normalisation; otherwise the call returns an error. When only one safe root is configured, `root` may be omitted on the `git_repos_scan` call.
 
 ## Claude Desktop config
 

@@ -55,7 +55,10 @@ const auditInput = z
 
 const detailInput = z
   .object({
-    abs_path: z.string().min(1).describe('Absolute path to a git repo, taken from a prior `scan`/`audit` result. Revalidated against MCP_GIT_AUDIT_SAFE_ROOTS before any `git` call.'),
+    abs_path: z
+      .string()
+      .min(1)
+      .describe('Absolute path to a git repo, taken from a prior `git_repos_scan`/`git_repos_audit` result. Revalidated against MCP_GIT_AUDIT_SAFE_ROOTS before any `git` call.'),
     commits: z.number().int().min(1).max(50).default(10).describe('How many recent commits to return (newest first). Hard cap 50.'),
     include_diffstat: z
       .boolean()
@@ -66,10 +69,10 @@ const detailInput = z
 
 export const registerRepoAuditTools = (server: McpServer): void => {
   server.registerTool(
-    'scan',
+    'git_repos_scan',
     {
       title: 'Scan a tree for git repositories',
-      description: `Walk a directory tree for .git directories and return repo metadata. Cheap and side-effect-free — no \`git\` invocations. The output is intended to be cached and fed into \`audit\` one or more times.
+      description: `Walk a directory tree for .git directories and return repo metadata. Cheap and side-effect-free — no \`git\` invocations. The output is intended to be cached and fed into \`git_repos_audit\` one or more times.
 
 Args:
   - root (string, optional): Absolute or ~/... path inside one of MCP_GIT_AUDIT_SAFE_ROOTS. Omit to use the single configured safe root.
@@ -97,7 +100,7 @@ Errors:
   )
 
   server.registerTool(
-    'audit',
+    'git_repos_audit',
     {
       title: 'Audit git repositories from a prior scan',
       description: `Run per-repo \`git\` checks (branch, working-tree status, ahead/behind, last commit) over a scan result. Designed to be called repeatedly against the same cached scan output — the cheap filesystem walk happens once, the more expensive git work can be re-run on demand.
@@ -105,7 +108,7 @@ Errors:
 Every \`abs_path\` in the supplied scan is revalidated against MCP_GIT_AUDIT_SAFE_ROOTS before any \`git\` call. A path that escapes every safe root is rejected — the cache cannot be used to widen the security boundary.
 
 Args:
-  - scan (object): a prior result from the \`scan\` tool: { root, scanned_at, repos: [{ path, abs_path, group, name }] }.
+  - scan (object): a prior result from the \`git_repos_scan\` tool: { root, scanned_at, repos: [{ path, abs_path, group, name }] }.
   - include_stale_days (number): Reserved; currently unused. Default 30.
 
 Returns:
@@ -138,10 +141,10 @@ Per-repo failures (e.g. corrupt .git/HEAD) are aggregated into the \`errors\` ar
   )
 
   server.registerTool(
-    'repo_detail',
+    'git_repo_detail',
     {
       title: 'Per-repo commit history and changed-file listing',
-      description: `Return commit history and working-tree status for a single repo identified by an absolute path from a prior \`scan\`/\`audit\` result. Read-only and cheap — no fetch, no diff content, no cross-repo work.
+      description: `Return commit history and working-tree status for a single repo identified by an absolute path from a prior \`git_repos_scan\`/\`git_repos_audit\` result. Read-only and cheap — no fetch, no diff content, no cross-repo work.
 
 \`abs_path\` is revalidated against MCP_GIT_AUDIT_SAFE_ROOTS before any \`git\` call; the cache cannot widen the security boundary.
 
