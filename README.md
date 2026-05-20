@@ -26,10 +26,12 @@ The level column shows the minimum `MCP_GIT_AUDIT_ACCESS_LEVEL` at which the too
 | `git_repos_scan`          | read        | Walk a tree for `.git` dirs and return repo metadata. No `git`.    |
 | `git_repos_audit`         | read        | Per-repo `git` checks (branch, status, ahead/behind, last commit). |
 | `git_repo_detail`         | read        | Commit history + working-tree file listing for one repo.           |
+| `git_repo_diff`           | read        | Structured per-file diff (status, +/-, patch) for staged/unstaged. |
 | `git_repo_remotes_list`   | read        | List configured remotes with fetch + push URLs.                    |
 | `git_repo_fetch`          | write       | `git fetch` — updates remote-tracking refs only.‡                  |
 | `git_repo_remote_add`     | write       | Add a new remote (rejects if it already exists).                   |
 | `git_repo_remote_set_url` | write       | Change an existing remote's fetch or push URL.                     |
+| `git_repo_commit`         | destructive | Stage selected files and create a commit (`dry_run` default true). |
 | `git_repo_pull`           | destructive | `git pull` — modifies working tree + current branch.‡              |
 | `git_repo_push`           | destructive | `git push` — modifies remote refs. `force_mode` enum gates force.  |
 | `git_repo_remote_remove`  | destructive | Drop a remote's config and `refs/remotes/<name>/*`.                |
@@ -174,6 +176,40 @@ Errors:
 
 Timeout and per-call errors surface in the `error` field rather than throwing, so the artifact can degrade gracefully. A repo with no commits returns `commits: []` without an error.
 
+### `git_repo_diff`
+
+Read-only structured diff. Returns one entry per changed file, each with `status` (M/A/D/R…), `additions`, `deletions`, and the unified patch body. Internally runs three `git diff` invocations (`--numstat -z`, `--name-status -z`, and unified patch) and merges the results by path — `paths` are then passed through unchanged in numstat order so callers can pair entries directly.
+
+`max_lines` is a budget across all files. Once a file's diff would push the running total over the cap, that file's `diff` becomes `null` and its `truncated` flag is set; subsequent files are likewise null+truncated. The top-level `truncated` is the disjunction over file entries.
+
+| Name        | Type     | Default | Notes                                                                                        |
+| ----------- | -------- | ------- | -------------------------------------------------------------------------------------------- |
+| `abs_path`  | string   | —       | Absolute path to a git repo inside `MCP_GIT_AUDIT_SAFE_ROOTS`.                               |
+| `staged`    | boolean  | `false` | `false` → `git diff` (unstaged); `true` → `git diff --cached` (staged).                      |
+| `paths`     | string[] | —       | Repo-relative pathspec to narrow the diff. Leading `-` / `/` and `..` segments are rejected. |
+| `max_lines` | number   | 500     | Cap on total diff body lines across all files. Max 2000.                                     |
+
+Output:
+
+```ts
+{
+  abs_path: string
+  staged: boolean
+  fetched_at: string // ISO-8601 UTC
+  total_additions: number
+  total_deletions: number
+  truncated: boolean // true iff any file entry was truncated
+  files: Array<{
+    path: string // repo-relative, forward slashes (new path on a rename)
+    status: string // M / A / D / R<score> / C<score> / T / U …
+    additions: number
+    deletions: number
+    diff: string | null // unified patch body; null when truncated
+    truncated: boolean
+  }>
+}
+```
+
 ### `git_repo_remotes_list`
 
 Read-only listing of remotes. Input: `{ abs_path }`. Output: `{ abs_path, fetched_at, remotes: [{ name, fetch_url, push_url }] }`. `push_url` differs from `fetch_url` only when a push override was configured via `set-url --push`.
@@ -192,6 +228,40 @@ Update remote-tracking refs (no working-tree changes). Requires `MCP_GIT_AUDIT_A
 | `dry_run`     | boolean | `false`  | Pass `--dry-run` to git itself.                                              |
 
 Output includes the executed argv (`command`), `stdout`, and `stderr` (git writes the useful "refs updated" lines on stderr).
+
+### `git_repo_commit`
+
+Stage a set of files and create a commit in one call. Destructive — writes a commit object and moves HEAD when `dry_run=false`. Requires `MCP_GIT_AUDIT_ACCESS_LEVEL=destructive`. Designed to back a commit-artifact UX where the preview step calls `git_repo_diff` + `git_repo_commit` (`dry_run=true`) and the confirm step re-calls with `dry_run=false`.
+
+`dry_run=true` (the default) runs the staging step normally but invokes `git commit --dry-run` — git prints what would be committed without writing an object or moving HEAD. The index mutation done by the staging step is local-only state and is fully reversible with `git reset`; treating it as part of the preview is intentional, because the artifact preview needs to reflect the post-stage state.
+
+No `--amend` in v1 — amending rewrites history and complicates the push flow (would need force-with-lease). Adding it later requires an explicit `amend: true` flag with its own warning copy.
+
+| Name | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `abs_path` | string | — | Absolute path to a git repo inside `MCP_GIT_AUDIT_SAFE_ROOTS`. |
+| `message` | string | — | Commit message. Single-line in v1 (no `\n` support). |
+| `stage` | `"all_tracked"` \| `"all"` \| `"paths"` \| `"none"` | `"all_tracked"` | `all_tracked` → `git add -u`. `all` → `git add -A`. `paths` → `git add -- <paths>` (requires `paths`). `none` → commit the index as-is. |
+| `paths` | string[] | — | Required when `stage="paths"`, rejected otherwise. Repo-relative paths. Leading `-` / `/` and `..` segments are rejected as an option-injection guard. |
+| `dry_run` | boolean | `true` | When true, runs `git commit --dry-run` — no commit object is written and HEAD does not move. The staging step still runs. |
+| `allow_empty` | boolean | `false` | Pass `--allow-empty`. Off by default — an empty commit is almost always a mistake. |
+
+Output:
+
+```ts
+{
+  abs_path: string;
+  ran_at: string;               // ISO-8601 UTC
+  dry_run: boolean;
+  stage: "all_tracked" | "all" | "paths" | "none";
+  staged_paths: string[];       // files actually staged at commit time
+  message: string;
+  command: string[];            // the commit argv (git + flags + -m + message)
+  sha: string | null;           // short SHA of new HEAD; null on dry-run
+  stdout: string;
+  stderr: string;
+}
+```
 
 ### `git_repo_pull`
 
@@ -260,7 +330,11 @@ Drop a remote. Requires `MCP_GIT_AUDIT_ACCESS_LEVEL=destructive`. Working-tree f
 | Env var | Required | Notes |
 | --- | --- | --- |
 | `MCP_GIT_AUDIT_SAFE_ROOTS` | no | Colon-separated list of absolute or `~/...` paths the tool is allowed to walk. May list several. Defaults to `~` (the user's home directory) when unset or empty. |
-| `MCP_GIT_AUDIT_ACCESS_LEVEL` | no | Maximum tool access level to register. One of: `read` (default — read-only audit + remotes-list), `write` (adds `git_repo_fetch`, `git_repo_remote_add`, `git_repo_remote_set_url`), `destructive` (adds `git_repo_pull`, `git_repo_push`, `git_repo_remote_remove`). Each tool's level is derived from its MCP annotations (`readOnlyHint` / `destructiveHint`); a tool registers when its derived level ≤ the configured level. Unknown values abort startup. |
+| `MCP_GIT_AUDIT_ACCESS_LEVEL` | no | Maximum tool access level to register. One of: `read` (default — read-only audit + diff + remotes-list), `write` (adds `git_repo_fetch`, `git_repo_remote_add`, `git_repo_remote_set_url`), `destructive` (adds `git_repo_commit`, `git_repo_pull`, `git_repo_push`, `git_repo_remote_remove`). Each tool's level is derived from its MCP annotations (`readOnlyHint` / `destructiveHint`); a tool registers when its derived level ≤ the configured level. The `dry_run: true` default on destructive tools controls _effect_; this gate controls _visibility_. Unknown values abort startup. |
+| `MCP_GIT_AUDIT_AUDIT_LOG` | no | Audit-log scope. One of `off`, `writes` (default — record only non-read tool calls), `all` (record every invocation). |
+| `MCP_GIT_AUDIT_AUDIT_LOG_PATH` | no | Path to the JSONL audit log. Default `~/.local/state/mcp-git-audit/audit.jsonl`. |
+| `MCP_GIT_AUDIT_AUDIT_LOG_MAX_BYTES` | no | Size-based rotation threshold in bytes. Default `10485760` (10 MiB). Set to `0` to disable rotation. |
+| `MCP_GIT_AUDIT_AUDIT_LOG_KEEP` | no | Number of rotated audit-log files to retain. Default `5`. |
 
 Any `root` argument (and every `abs_path` re-supplied to `git_repos_audit`) must equal or live inside one of the safe roots after `~` expansion and `realpath`-style normalisation; otherwise the call returns an error. When only one safe root is configured, `root` may be omitted on the `git_repos_scan` call.
 

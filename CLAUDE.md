@@ -19,6 +19,7 @@ Run `bun run` with no args for the full script list.
 Tool names follow `<app>_<resource>_<action>` (snake_case) with `<app>` = `git`. Plural resource for collection ops, singular for single-item ops. Current surface:
 
 - **repo-audit** (read-only): `git_repos_scan`, `git_repos_audit`, `git_repo_detail`.
+- **repo-commit**: `git_repo_diff` (read), `git_repo_commit` (destructive — non-idempotent: writes a new commit each call).
 - **repo-remotes**: `git_repo_remotes_list` (read), `git_repo_remote_set_url` (write/idempotent), `git_repo_remote_add` (write/additive), `git_repo_remote_remove` (destructive).
 - **repo-sync**: `git_repo_fetch` (write — open-world idempotent), `git_repo_pull` (destructive — open-world), `git_repo_push` (destructive — open-world).
 
@@ -31,7 +32,7 @@ Tool names follow `<app>_<resource>_<action>` (snake_case) with `<app>` = `git`.
 - explicit `readOnlyHint: false` AND `destructiveHint: false` → `write` (non-destructive mutation)
 - anything else (unannotated / partially annotated) → `destructive` (fail-safe)
 
-A tool registers when its derived level is at or below `MCP_GIT_AUDIT_ACCESS_LEVEL` (default: `read`). The audit-tool group is all `READ_ONLY`; the remotes and sync groups span `read` → `destructive` via the annotation presets in [src/utils/annotations.ts](./src/utils/annotations.ts) (`READ_ONLY`, `ADDITIVE`, `STATE_TOGGLE`, `STATE_TOGGLE_REMOTE`, `DESTRUCTIVE`, `DESTRUCTIVE_REMOTE`). The default `read` gate hides every mutation tool until the operator explicitly opts in via `MCP_GIT_AUDIT_ACCESS_LEVEL=write` or `=destructive`. New tools MUST set `annotations` explicitly to one of those presets — do not bypass the proxy.
+A tool registers when its derived level is at or below `MCP_GIT_AUDIT_ACCESS_LEVEL` (default: `read`). The audit-tool group is all `READ_ONLY`; the remotes, sync, and commit groups span `read` → `destructive` via the annotation presets in [src/utils/annotations.ts](./src/utils/annotations.ts) (`READ_ONLY`, `ADDITIVE`, `STATE_TOGGLE`, `STATE_TOGGLE_REMOTE`, `DESTRUCTIVE`, `DESTRUCTIVE_REMOTE`, `DESTRUCTIVE_ONESHOT`). `DESTRUCTIVE_ONESHOT` is the right preset for tools whose effect depends on current FS / index state (running twice doesn't reach the same end state — `git_repo_commit` is the current example). The default `read` gate hides every mutation tool until the operator explicitly opts in via `MCP_GIT_AUDIT_ACCESS_LEVEL=write` or `=destructive`. New tools MUST set `annotations` explicitly to one of those presets — do not bypass the proxy.
 
 ### Three-stage pipeline
 

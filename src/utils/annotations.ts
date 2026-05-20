@@ -39,3 +39,5 @@ export const STATE_TOGGLE_REMOTE = { readOnlyHint: false, destructiveHint: false
 export const DESTRUCTIVE = { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false } as const
 
 export const DESTRUCTIVE_REMOTE = { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true } as const
+
+export const DESTRUCTIVE_ONESHOT = { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false } as const
