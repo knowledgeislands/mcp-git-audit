@@ -16,7 +16,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { ACCESS_LEVEL, AUDIT_LOG_MODE, AUDIT_LOG_PATH, SAFE_ROOTS } from '../config.js'
-import { registerRepoAuditTools } from '../tools/index.js'
+import { registerRepoAuditTools, registerRepoRemotesTools, registerRepoSyncTools } from '../tools/index.js'
 import { makeAccessGatedRegister } from '../utils/access-level.js'
 
 console.error(`mcp-git-audit starting...`)
@@ -31,6 +31,8 @@ const server = new McpServer({
 server.registerTool = makeAccessGatedRegister(server)
 
 registerRepoAuditTools(server)
+registerRepoSyncTools(server)
+registerRepoRemotesTools(server)
 
 const main = async (): Promise<void> => {
   const transport = new StdioServerTransport()

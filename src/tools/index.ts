@@ -1,3 +1,5 @@
 import { registerRepoAuditTools } from './repo-audit/index.js'
+import { registerRepoRemotesTools } from './repo-remotes/index.js'
+import { registerRepoSyncTools } from './repo-sync/index.js'
 
-export { registerRepoAuditTools }
+export { registerRepoAuditTools, registerRepoRemotesTools, registerRepoSyncTools }

@@ -22,5 +22,20 @@
  *   DESTRUCTIVE_REMOTE     — open-world destructive (idempotent end state)
  *   DESTRUCTIVE_ONESHOT    — closed-world destructive, NON-idempotent
  *                            (effect depends on current state — e.g. prune)
+ *
+ * Access-level mapping (see access-level.ts):
+ *   readOnlyHint: true                              → 'read'
+ *   readOnlyHint: false AND destructiveHint: false  → 'write'
+ *   destructiveHint: true                           → 'destructive'
  */
 export const READ_ONLY = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } as const
+
+export const ADDITIVE = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false } as const
+
+export const STATE_TOGGLE = { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } as const
+
+export const STATE_TOGGLE_REMOTE = { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true } as const
+
+export const DESTRUCTIVE = { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false } as const
+
+export const DESTRUCTIVE_REMOTE = { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true } as const
