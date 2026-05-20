@@ -164,6 +164,7 @@ Timeout and per-call errors surface in the `error` field rather than throwing, s
 | Env var | Required | Notes |
 | --- | --- | --- |
 | `MCP_GIT_AUDIT_SAFE_ROOTS` | no | Colon-separated list of absolute or `~/...` paths the tool is allowed to walk. May list several. Defaults to `~` (the user's home directory) when unset or empty. |
+| `MCP_GIT_AUDIT_ACCESS_LEVEL` | no | Maximum tool access level to register. One of: `read` (default — read-only tools only), `write` (adds non-destructive mutations), `destructive` (adds delete/overwrite). Every tool shipped today is `READ_ONLY`, so all three settings expose the same surface; the gate exists for parity with the sibling MCPs and so future non-read tools are opt-in at deploy time. Each tool's level is derived from its MCP annotations (`readOnlyHint` / `destructiveHint`); a tool registers when its derived level ≤ the configured level. Unknown values abort startup. |
 
 Any `root` argument (and every `abs_path` re-supplied to `git_repos_audit`) must equal or live inside one of the safe roots after `~` expansion and `realpath`-style normalisation; otherwise the call returns an error. When only one safe root is configured, `root` may be omitted on the `git_repos_scan` call.
 
