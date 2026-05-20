@@ -2,8 +2,9 @@
  * Append-only JSONL audit log for tool invocations.
  *
  * Scope is controlled by MCP_GIT_AUDIT_AUDIT_LOG: `off` (no logging), `writes`
- * (default — but mcp-git-audit has no destructive tools, so nothing is logged)
- * or `all` (every invocation). Path is configurable via
+ * (default — but mcp-git-audit has no non-read tools today, so nothing is
+ * logged) or `all` (every invocation). Level is derived from each tool's MCP
+ * annotations by `makeAccessGatedRegister`. Path is configurable via
  * MCP_GIT_AUDIT_AUDIT_LOG_PATH; defaults to `~/.local/state/mcp-git-audit/audit.jsonl`.
  *
  * Failures to write the audit line are swallowed (stderr only) — a broken log
@@ -11,16 +12,13 @@
  */
 import * as fs from 'node:fs/promises'
 import * as path from 'node:path'
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { AUDIT_LOG_KEEP, AUDIT_LOG_MAX_BYTES, AUDIT_LOG_MODE, AUDIT_LOG_PATH } from '../config.js'
-
-export type Role = 'read' | 'write'
+import { type AccessLevel, AUDIT_LOG_KEEP, AUDIT_LOG_MAX_BYTES, AUDIT_LOG_MODE, AUDIT_LOG_PATH } from '../config.js'
 
 export interface AuditEvent {
   ts: string
   server: string
   tool: string
-  role: Role
+  level: AccessLevel
   ok: boolean
   duration_ms: number
   error?: string
@@ -104,9 +102,9 @@ const extractErrorText = (result: unknown): string | undefined => {
   return first?.text
 }
 
-export const withAuditLog = (toolName: string, role: Role, callback: ToolCallback): ToolCallback => {
+export const withAuditLog = (toolName: string, level: AccessLevel, callback: ToolCallback): ToolCallback => {
   if (AUDIT_LOG_MODE === 'off') return callback
-  if (role === 'read' && AUDIT_LOG_MODE !== 'all') return callback
+  if (level === 'read' && AUDIT_LOG_MODE !== 'all') return callback
   return async (...callbackArgs: unknown[]) => {
     const start = Date.now()
     const args = callbackArgs[0]
@@ -118,7 +116,7 @@ export const withAuditLog = (toolName: string, role: Role, callback: ToolCallbac
         ts: new Date().toISOString(),
         server: SERVER_NAME,
         tool: toolName,
-        role,
+        level,
         ok: !isError,
         duration_ms: Date.now() - start,
         error: errText,
@@ -130,7 +128,7 @@ export const withAuditLog = (toolName: string, role: Role, callback: ToolCallbac
         ts: new Date().toISOString(),
         server: SERVER_NAME,
         tool: toolName,
-        role,
+        level,
         ok: false,
         duration_ms: Date.now() - start,
         error: err instanceof Error ? err.message : String(err),
@@ -139,24 +137,4 @@ export const withAuditLog = (toolName: string, role: Role, callback: ToolCallbac
       throw err
     }
   }
-}
-
-type RegisterTool = McpServer['registerTool']
-
-/**
- * Wrap `server.registerTool` so every registered tool's callback is decorated
- * with the audit logger. Role is inferred from `annotations.readOnlyHint`.
- */
-export const makeAuditedRegister = (server: McpServer): RegisterTool => {
-  return new Proxy(server.registerTool.bind(server) as RegisterTool, {
-    apply(target, thisArg, args: Parameters<RegisterTool>) {
-      const name = args[0]
-      const config = args[1] as { annotations?: { readOnlyHint?: boolean } } | undefined
-      const role: Role = config?.annotations?.readOnlyHint ? 'read' : 'write'
-      const wrappedArgs = [...args] as Parameters<RegisterTool>
-      const callback = wrappedArgs[2] as ToolCallback
-      wrappedArgs[2] = withAuditLog(name, role, callback) as (typeof wrappedArgs)[2]
-      return Reflect.apply(target, thisArg, wrappedArgs)
-    }
-  })
 }

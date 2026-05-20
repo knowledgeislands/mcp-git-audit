@@ -20,10 +20,10 @@ describe('appendAuditEvent / withAuditLog (mcp-git-audit)', () => {
     delete process.env.MCP_GIT_AUDIT_AUDIT_LOG
   })
 
-  // Default mode is `writes`, but this server has only read-role tools — so the
-  // default scope produces zero output. Effectively logging-off until the user
-  // opts in with `=all`.
-  it('returns the handler verbatim for read-role tools by default (writes mode → no read logging)', async () => {
+  // Default mode is `writes`, but this server has only read-level tools today —
+  // so the default scope produces zero output. Effectively logging-off until
+  // the user opts in with `=all`.
+  it('returns the handler verbatim for read-level tools by default (writes mode → no read logging)', async () => {
     const { withAuditLog } = await import('./audit-log.js')
     const handler = vi.fn(async (_args: unknown) => ({ content: [{ type: 'text', text: 'ok' }] }))
     expect(withAuditLog('git_repos_scan', 'read', handler)).toBe(handler)
@@ -32,7 +32,7 @@ describe('appendAuditEvent / withAuditLog (mcp-git-audit)', () => {
     await expect(fs.access(logPath)).rejects.toThrow()
   })
 
-  it('logs read-role tools when MCP_GIT_AUDIT_AUDIT_LOG=all', async () => {
+  it('logs read-level tools when MCP_GIT_AUDIT_AUDIT_LOG=all', async () => {
     process.env.MCP_GIT_AUDIT_AUDIT_LOG = 'all'
     const { withAuditLog } = await import('./audit-log.js')
     const wrapped = withAuditLog('git_repos_scan', 'read', async () => ({ content: [{ type: 'text', text: 'ok' }] }))
@@ -41,7 +41,7 @@ describe('appendAuditEvent / withAuditLog (mcp-git-audit)', () => {
     const event = JSON.parse((await fs.readFile(logPath, 'utf-8')).trim())
     expect(event.server).toBe('mcp-git-audit')
     expect(event.tool).toBe('git_repos_scan')
-    expect(event.role).toBe('read')
+    expect(event.level).toBe('read')
     expect(event.ok).toBe(true)
     expect(event.args).toEqual({ root: '/repos' })
   })

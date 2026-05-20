@@ -18,9 +18,16 @@ Run `bun run` with no args for the full script list.
 
 Tool names follow `<app>_<resource>_<action>` (snake_case) with `<app>` = `git`. Plural resource for collection ops, singular for single-item ops. Current surface: `git_repos_scan`, `git_repos_audit`, `git_repo_detail`.
 
-### Read-only by design — no role gate
+### Access-level gate — driven by annotations, not names
 
-Every tool is read-only (`READ_ONLY` annotation from [src/utils/annotations.ts](./src/utils/annotations.ts)); there is no `roles.ts` and no `MCP_GIT_AUDIT_ROLES`. Audit-log infra wraps `server.registerTool` directly via `makeAuditedRegister` ([src/utils/audit-log.ts](./src/utils/audit-log.ts)) — the role recorded in each event is derived from `annotations.readOnlyHint` so the JSONL shape matches the sibling MCPs. If a future tool ever needs to mutate, port the annotation-based role gate from one of the other repos rather than reintroducing prefix dispatch.
+[src/utils/access-level.ts](./src/utils/access-level.ts) `makeAccessGatedRegister()` decides at startup whether to register each tool, based on `config.annotations`:
+
+- `readOnlyHint: true` → `read`
+- `destructiveHint: true` → `destructive`
+- explicit `readOnlyHint: false` AND `destructiveHint: false` → `write` (non-destructive mutation)
+- anything else (unannotated / partially annotated) → `destructive` (fail-safe)
+
+A tool registers when its derived level is at or below `MCP_GIT_AUDIT_ACCESS_LEVEL` (default: `read`). Every tool shipped today carries the `READ_ONLY` annotation from [src/utils/annotations.ts](./src/utils/annotations.ts), so all tools register under the default; the gate exists so that any future non-read tool (e.g. saving an audit summary, opening a PR) is opt-in at deploy time and matches the sibling MCPs' shape. New tools MUST set `annotations` explicitly — do not bypass the proxy.
 
 ### Three-stage pipeline
 

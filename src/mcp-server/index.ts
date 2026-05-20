@@ -15,19 +15,20 @@
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
-import { AUDIT_LOG_MODE, AUDIT_LOG_PATH, SAFE_ROOTS } from '../config.js'
+import { ACCESS_LEVEL, AUDIT_LOG_MODE, AUDIT_LOG_PATH, SAFE_ROOTS } from '../config.js'
 import { registerRepoAuditTools } from '../tools/index.js'
-import { makeAuditedRegister } from '../utils/audit-log.js'
+import { makeAccessGatedRegister } from '../utils/access-level.js'
 
 console.error(`mcp-git-audit starting...`)
 console.error(`  MCP_GIT_AUDIT_SAFE_ROOTS=${SAFE_ROOTS.join(':')}`)
+console.error(`  MCP_GIT_AUDIT_ACCESS_LEVEL=${ACCESS_LEVEL}`)
 console.error(`  MCP_GIT_AUDIT_AUDIT_LOG=${AUDIT_LOG_MODE}${AUDIT_LOG_MODE === 'off' ? '' : ` (path: ${AUDIT_LOG_PATH})`}`)
 
 const server = new McpServer({
   name: 'mcp-git-audit',
   version: '1.0.0'
 })
-server.registerTool = makeAuditedRegister(server)
+server.registerTool = makeAccessGatedRegister(server)
 
 registerRepoAuditTools(server)
 

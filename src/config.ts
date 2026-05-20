@@ -29,11 +29,36 @@ const parseSafeRoots = (raw: string | undefined): readonly string[] => {
 
 export const SAFE_ROOTS: readonly string[] = parseSafeRoots(process.env.MCP_GIT_AUDIT_SAFE_ROOTS)
 
+/**
+ * Single ordinal access level — matches the sibling MCPs (mcp-kb-fs, mcp-gmail,
+ * mcp-m365, mcp-claude-housekeeping). Each level implies all lower ones:
+ *   `read`        — only readOnly tools registered.
+ *   `write`       — readOnly + non-destructive mutations.
+ *   `destructive` — everything, including delete / overwrite.
+ *
+ * mcp-git-audit has only read-only tools today; this gate is in place so that
+ * any future non-read tool is opt-in at deploy time. The gate uses
+ * ACCESS_LEVEL_RANK for ordinal comparison; a tool registers when its derived
+ * level ≤ the configured level.
+ */
+export type AccessLevel = 'read' | 'write' | 'destructive'
+export const ACCESS_LEVELS: readonly AccessLevel[] = ['read', 'write', 'destructive'] as const
+export const ACCESS_LEVEL_RANK: Record<AccessLevel, number> = { read: 1, write: 2, destructive: 3 }
+
+const parseAccessLevel = (raw: string | undefined): AccessLevel => {
+  const v = raw?.trim()
+  if (v === undefined || v === '') return 'read'
+  if ((ACCESS_LEVELS as readonly string[]).includes(v)) return v as AccessLevel
+  throw new Error(`Invalid MCP_GIT_AUDIT_ACCESS_LEVEL="${raw}". Allowed: ${ACCESS_LEVELS.join(', ')}`)
+}
+
+export const ACCESS_LEVEL: AccessLevel = parseAccessLevel(process.env.MCP_GIT_AUDIT_ACCESS_LEVEL)
+
 export const AUDIT_LOG_PATH: string = path.resolve(expandHome(process.env.MCP_GIT_AUDIT_AUDIT_LOG_PATH ?? path.join(os.homedir(), '.local', 'state', 'mcp-git-audit', 'audit.jsonl')))
 
 /**
- * Scope of tool invocations to record. mcp-git-audit is read-only, so the
- * `writes` default never produces any output here; flip to `all` to record
+ * Scope of tool invocations to record. mcp-git-audit is read-only today, so
+ * the `writes` default never produces any output here; flip to `all` to record
  * every invocation, or `off` to fully disable.
  */
 export type AuditLogMode = 'off' | 'writes' | 'all'
