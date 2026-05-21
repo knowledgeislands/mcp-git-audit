@@ -12,7 +12,7 @@ describe('levelFromAnnotations / makeAccessGatedRegister (mcp-git-audit)', () =>
   })
 
   const DESTRUCTIVE = { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false } as const
-  const ADDITIVE = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false } as const
+  const WRITE = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false } as const
 
   it('maps READ_ONLY to read', async () => {
     const { levelFromAnnotations } = await import('./access-level.js')
@@ -26,7 +26,7 @@ describe('levelFromAnnotations / makeAccessGatedRegister (mcp-git-audit)', () =>
 
   it('maps explicit non-destructive write annotations to write', async () => {
     const { levelFromAnnotations } = await import('./access-level.js')
-    expect(levelFromAnnotations(ADDITIVE)).toBe('write')
+    expect(levelFromAnnotations(WRITE)).toBe('write')
   })
 
   it('defaults to destructive (fail-safe) for missing annotations', async () => {
@@ -45,7 +45,7 @@ describe('levelFromAnnotations / makeAccessGatedRegister (mcp-git-audit)', () =>
     const stub = { registerTool: (name: string, _config: unknown, _handler: unknown) => calls.push(name) }
     const gated = makeAccessGatedRegister(stub as unknown as Parameters<typeof makeAccessGatedRegister>[0])
     gated('git_repos_scan', { title: 't', description: 'd', annotations: READ_ONLY } as never, (async () => ({ content: [] })) as never)
-    gated('hypothetical_writer', { title: 't', description: 'd', annotations: ADDITIVE } as never, (async () => ({ content: [] })) as never)
+    gated('hypothetical_writer', { title: 't', description: 'd', annotations: WRITE } as never, (async () => ({ content: [] })) as never)
     gated('hypothetical_destructive', { title: 't', description: 'd', annotations: DESTRUCTIVE } as never, (async () => ({ content: [] })) as never)
     expect(calls).toEqual(['git_repos_scan'])
   })
@@ -57,7 +57,7 @@ describe('levelFromAnnotations / makeAccessGatedRegister (mcp-git-audit)', () =>
     const stub = { registerTool: (name: string, _config: unknown, _handler: unknown) => calls.push(name) }
     const gated = makeAccessGatedRegister(stub as unknown as Parameters<typeof makeAccessGatedRegister>[0])
     gated('git_repos_scan', { title: 't', description: 'd', annotations: READ_ONLY } as never, (async () => ({ content: [] })) as never)
-    gated('hypothetical_writer', { title: 't', description: 'd', annotations: ADDITIVE } as never, (async () => ({ content: [] })) as never)
+    gated('hypothetical_writer', { title: 't', description: 'd', annotations: WRITE } as never, (async () => ({ content: [] })) as never)
     gated('hypothetical_destructive', { title: 't', description: 'd', annotations: DESTRUCTIVE } as never, (async () => ({ content: [] })) as never)
     expect(calls).toEqual(['git_repos_scan', 'hypothetical_writer'])
   })
@@ -69,7 +69,7 @@ describe('levelFromAnnotations / makeAccessGatedRegister (mcp-git-audit)', () =>
     const stub = { registerTool: (name: string, _config: unknown, _handler: unknown) => calls.push(name) }
     const gated = makeAccessGatedRegister(stub as unknown as Parameters<typeof makeAccessGatedRegister>[0])
     gated('git_repos_scan', { title: 't', description: 'd', annotations: READ_ONLY } as never, (async () => ({ content: [] })) as never)
-    gated('hypothetical_writer', { title: 't', description: 'd', annotations: ADDITIVE } as never, (async () => ({ content: [] })) as never)
+    gated('hypothetical_writer', { title: 't', description: 'd', annotations: WRITE } as never, (async () => ({ content: [] })) as never)
     gated('hypothetical_destructive', { title: 't', description: 'd', annotations: DESTRUCTIVE } as never, (async () => ({ content: [] })) as never)
     expect(calls).toEqual(['git_repos_scan', 'hypothetical_writer', 'hypothetical_destructive'])
   })

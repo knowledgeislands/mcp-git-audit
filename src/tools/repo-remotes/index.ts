@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import { addRemote, listRemotes, removeRemote, setRemoteUrl } from '../../remotes.js'
-import { ADDITIVE, DESTRUCTIVE, READ_ONLY, STATE_TOGGLE } from '../../utils/annotations.js'
+import { DESTRUCTIVE, READ_ONLY, WRITE, WRITE_IDEMPOTENT } from '../../utils/annotations.js'
 import { errMessage } from '../../utils/errors.js'
 import { remoteNameSchema, remoteUrlSchema } from '../../utils/git-exec.js'
 import { errorResult, jsonResult } from '../../utils/results.js'
@@ -84,7 +84,7 @@ Args:
 Returns:
   JSON object: { abs_path, changed_at, dry_run, remote, before, after?, stderr }. \`after\` is omitted when \`dry_run=true\`.`,
       inputSchema: setUrlInput,
-      annotations: STATE_TOGGLE
+      annotations: WRITE_IDEMPOTENT
     },
     async ({ abs_path, remote, url, push, dry_run }) => {
       try {
@@ -112,7 +112,7 @@ Args:
 Returns:
   JSON object: { abs_path, changed_at, dry_run, remote, after?, stderr }. \`after\` is omitted when \`dry_run=true\`.`,
       inputSchema: addInput,
-      annotations: ADDITIVE
+      annotations: WRITE
     },
     async ({ abs_path, remote, url, dry_run }) => {
       try {

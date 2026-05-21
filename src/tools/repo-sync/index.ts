@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import { fetchRepo, pullRepo, pushRepo } from '../../sync.js'
-import { DESTRUCTIVE_REMOTE, STATE_TOGGLE_REMOTE } from '../../utils/annotations.js'
+import { DESTRUCTIVE_REMOTE, WRITE_IDEMPOTENT_REMOTE } from '../../utils/annotations.js'
 import { errMessage } from '../../utils/errors.js'
 import { branchNameSchema, remoteNameSchema } from '../../utils/git-exec.js'
 import { errorResult, jsonResult } from '../../utils/results.js'
@@ -70,7 +70,7 @@ Args:
 Returns:
   JSON object: { abs_path, ran_at, dry_run, remote, prune, tags, all_remotes, command, stdout, stderr }. Most useful output (refs updated) is on \`stderr\` — that's where git writes it.`,
       inputSchema: fetchInput,
-      annotations: STATE_TOGGLE_REMOTE
+      annotations: WRITE_IDEMPOTENT_REMOTE
     },
     async ({ abs_path, remote, prune, tags, all_remotes, dry_run }) => {
       try {
