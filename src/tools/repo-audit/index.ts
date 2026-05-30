@@ -1,24 +1,22 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
-import { auditScan } from '../../audit.js'
-import { SAFE_ROOTS } from '../../config.js'
-import { repoDetail } from '../../detail.js'
-import { type ScanResult, scanRoot } from '../../scan.js'
+import type { Config } from '../../config/index.js'
+import { auditScan, repoDetail, type ScanResult, scanRoot } from '../../main/repo-audit/index.js'
 import { READ_ONLY } from '../../utils/annotations.js'
 import { errMessage } from '../../utils/errors.js'
 import { resolveAgainstSafeRoots } from '../../utils/paths.js'
 import { errorResult, jsonResult } from '../../utils/results.js'
 
-const resolveRootArg = async (root: string | undefined): Promise<string | { error: string }> => {
+const resolveRootArg = async (safeRoots: readonly string[], root: string | undefined): Promise<string | { error: string }> => {
   if (root === undefined) {
-    const [sole] = SAFE_ROOTS
-    if (SAFE_ROOTS.length !== 1 || sole === undefined) {
-      return { error: `root is required when multiple safe_roots are configured (${SAFE_ROOTS.join(', ')})` }
+    const [sole] = safeRoots
+    if (safeRoots.length !== 1 || sole === undefined) {
+      return { error: `root is required when multiple safe_roots are configured (${safeRoots.join(', ')})` }
     }
     return sole
   }
   try {
-    return await resolveAgainstSafeRoots(root, SAFE_ROOTS)
+    return await resolveAgainstSafeRoots(root, safeRoots)
   } catch (err) {
     return { error: errMessage(err) }
   }
@@ -68,7 +66,7 @@ const detailInput = z
   })
   .strict()
 
-export const registerRepoAuditTools = (server: McpServer): void => {
+export const registerRepoAuditTools = (server: McpServer, cfg: Config): void => {
   server.registerTool(
     'git_repos_scan',
     {
@@ -91,7 +89,7 @@ Errors:
     },
     async ({ root, max_depth }) => {
       try {
-        const resolved = await resolveRootArg(root)
+        const resolved = await resolveRootArg(cfg.safeRoots, root)
         if (typeof resolved !== 'string') return errorResult('scanning repos', new Error(resolved.error))
         return jsonResult(await scanRoot(resolved, { max_depth }))
       } catch (err) {
@@ -121,13 +119,13 @@ Per-repo failures (e.g. corrupt .git/HEAD) are aggregated into the \`errors\` ar
     },
     async ({ scan, include_stale_days }) => {
       try {
-        const rootResolved = await resolveRootArg(scan.root)
+        const rootResolved = await resolveRootArg(cfg.safeRoots, scan.root)
         if (typeof rootResolved !== 'string') return errorResult('auditing repos', new Error(rootResolved.error))
 
         const validatedRepos = []
         for (const r of scan.repos) {
           try {
-            const absResolved = await resolveAgainstSafeRoots(r.abs_path, SAFE_ROOTS)
+            const absResolved = await resolveAgainstSafeRoots(r.abs_path, cfg.safeRoots)
             validatedRepos.push({ ...r, abs_path: absResolved })
           } catch (err) {
             return errorResult('auditing repos', new Error(`scan.repos[${r.path}].abs_path: ${errMessage(err)}`))
@@ -163,7 +161,7 @@ Status codes mirror \`git status --porcelain\` verbatim so downstream consumers 
     },
     async ({ abs_path, commits, include_diffstat }) => {
       try {
-        return jsonResult(await repoDetail(abs_path, { commits, include_diffstat }))
+        return jsonResult(await repoDetail(cfg.safeRoots, abs_path, { commits, include_diffstat }))
       } catch (err) {
         return errorResult('reading repo detail', err)
       }

@@ -20,10 +20,10 @@ You should expect an acknowledgement within 72 hours. We aim to triage, investig
 
 In scope:
 
-- Path containment in `src/utils.ts` (`resolveAgainstSafeRoots`) — any `root` argument that resolves outside every configured safe root (traversal, symlink escape, encoded separators, edge cases around trailing slashes).
-- `git` invocation in `src/audit.ts` — verifying every `git` child process is scoped to a resolved repo path inside a safe root, and that no argument is shell-interpolated.
-- Repo discovery in `src/audit.ts` (`findRepos`) — depth limiting, refusal to recurse into hidden directories or `node_modules`, skipping worktree-pointer `.git` files.
-- Boot-time validation in `src/config.ts` of `MCP_GIT_AUDIT_SAFE_ROOTS`.
+- Path containment in `src/utils/paths.ts` (`resolveAgainstSafeRoots`) — any `root`/`abs_path` argument that resolves outside every configured safe root (traversal, symlink escape, encoded separators, edge cases around trailing slashes). Every `main/` entry point receives `safeRoots` (from `cfg.safeRoots`) as its first argument.
+- `git` invocation in `src/main/repo-audit/audit.ts`, `src/main/repo-audit/detail.ts`, and `src/utils/git-exec.ts` (`runGitCapture`) — verifying every `git` child process is scoped to a resolved repo path inside a safe root, and that no argument is shell-interpolated (`execFile` with an argv array, `--no-optional-locks`).
+- Repo discovery in `src/main/repo-audit/scan.ts` (`findRepos`) — depth limiting, refusal to recurse into hidden directories or `node_modules`, skipping worktree-pointer `.git` files.
+- Boot-time validation in `src/config/index.ts` (`loadConfig`) of `MCP_GIT_AUDIT_SAFE_ROOTS`.
 
 Out of scope:
 

@@ -19,7 +19,9 @@ const git = (cwd: string, ...args: string[]) =>
     }
   })
 
+// Config is injected, not read from env: tests pass an explicit safeRoots list.
 const TEST_ROOT = path.join(os.tmpdir(), 'mcp-git-audit-tests')
+const SAFE_ROOTS: readonly string[] = [TEST_ROOT]
 const tmpRoot = path.join(TEST_ROOT, 'diff', `run-${process.pid}`)
 
 const makeRepo = async (name: string): Promise<string> => {
@@ -45,7 +47,7 @@ afterAll(async () => {
 describe('diffRepo', () => {
   it('returns empty result when the working tree is clean', async () => {
     const repo = await makeRepo('clean')
-    const r = await diffRepo(repo, { staged: false, max_lines: 500 })
+    const r = await diffRepo(SAFE_ROOTS, repo, { staged: false, max_lines: 500 })
     expect(r.files).toEqual([])
     expect(r.total_additions).toBe(0)
     expect(r.total_deletions).toBe(0)
@@ -60,7 +62,7 @@ describe('diffRepo', () => {
     await fs.writeFile(path.join(repo, 'b.txt'), 'b\nb2\n', 'utf-8')
     await git(repo, 'add', 'b.txt')
     // b.txt is staged now — it should NOT appear in unstaged diff.
-    const r = await diffRepo(repo, { staged: false, max_lines: 500 })
+    const r = await diffRepo(SAFE_ROOTS, repo, { staged: false, max_lines: 500 })
     expect(r.files.map((f) => f.path)).toEqual(['README.md'])
     const f = r.files[0]
     if (!f) throw new Error('expected README.md entry')
@@ -78,7 +80,7 @@ describe('diffRepo', () => {
     const repo = await makeRepo('staged')
     await fs.writeFile(path.join(repo, 'c.txt'), 'c\n', 'utf-8')
     await git(repo, 'add', 'c.txt')
-    const r = await diffRepo(repo, { staged: true, max_lines: 500 })
+    const r = await diffRepo(SAFE_ROOTS, repo, { staged: true, max_lines: 500 })
     expect(r.staged).toBe(true)
     expect(r.files.map((f) => f.path)).toEqual(['c.txt'])
     expect(r.files[0]?.status).toBe('A')
@@ -93,14 +95,14 @@ describe('diffRepo', () => {
     await git(repo, 'commit', '-q', '-m', 'track')
     await fs.writeFile(path.join(repo, 'a.txt'), 'a-changed\n', 'utf-8')
     await fs.writeFile(path.join(repo, 'b.txt'), 'b-changed\n', 'utf-8')
-    const r = await diffRepo(repo, { staged: false, paths: ['a.txt'], max_lines: 500 })
+    const r = await diffRepo(SAFE_ROOTS, repo, { staged: false, paths: ['a.txt'], max_lines: 500 })
     expect(r.files.map((f) => f.path)).toEqual(['a.txt'])
   })
 
   it('handles a rename by keying entries on the new path', async () => {
     const repo = await makeRepo('rename')
     await git(repo, 'mv', 'README.md', 'docs.md')
-    const r = await diffRepo(repo, { staged: true, max_lines: 500 })
+    const r = await diffRepo(SAFE_ROOTS, repo, { staged: true, max_lines: 500 })
     const entry = r.files.find((f) => f.path === 'docs.md')
     expect(entry).toBeDefined()
     expect(entry?.status.startsWith('R')).toBe(true)
@@ -113,7 +115,7 @@ describe('diffRepo', () => {
     await git(repo, 'commit', '-q', '-m', 'track big')
     const lines = Array.from({ length: 50 }, (_, i) => `line ${i}`).join('\n')
     await fs.writeFile(path.join(repo, 'big.txt'), `${lines}\n`, 'utf-8')
-    const r = await diffRepo(repo, { staged: false, max_lines: 5 })
+    const r = await diffRepo(SAFE_ROOTS, repo, { staged: false, max_lines: 5 })
     expect(r.truncated).toBe(true)
     const big = r.files.find((f) => f.path === 'big.txt')
     expect(big?.truncated).toBe(true)
@@ -126,7 +128,7 @@ describe('diffRepo', () => {
     const bin = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x00])
     await fs.writeFile(path.join(repo, 'logo.png'), bin)
     await git(repo, 'add', 'logo.png')
-    const r = await diffRepo(repo, { staged: true, max_lines: 500 })
+    const r = await diffRepo(SAFE_ROOTS, repo, { staged: true, max_lines: 500 })
     const entry = r.files.find((f) => f.path === 'logo.png')
     expect(entry).toBeDefined()
     expect(entry?.additions).toBe(0)
@@ -135,10 +137,10 @@ describe('diffRepo', () => {
 
   it('rejects relative paths that escape or look like options', async () => {
     const repo = await makeRepo('reject-paths')
-    await expect(diffRepo(repo, { staged: false, paths: ['../etc/passwd'], max_lines: 500 })).rejects.toThrow(/invalid path/)
-    await expect(diffRepo(repo, { staged: false, paths: ['/etc/passwd'], max_lines: 500 })).rejects.toThrow(/invalid path/)
-    await expect(diffRepo(repo, { staged: false, paths: ['-rf'], max_lines: 500 })).rejects.toThrow(/invalid path/)
-    await expect(diffRepo(repo, { staged: false, paths: ['foo/../bar'], max_lines: 500 })).rejects.toThrow(/invalid path/)
+    await expect(diffRepo(SAFE_ROOTS, repo, { staged: false, paths: ['../etc/passwd'], max_lines: 500 })).rejects.toThrow(/invalid path/)
+    await expect(diffRepo(SAFE_ROOTS, repo, { staged: false, paths: ['/etc/passwd'], max_lines: 500 })).rejects.toThrow(/invalid path/)
+    await expect(diffRepo(SAFE_ROOTS, repo, { staged: false, paths: ['-rf'], max_lines: 500 })).rejects.toThrow(/invalid path/)
+    await expect(diffRepo(SAFE_ROOTS, repo, { staged: false, paths: ['foo/../bar'], max_lines: 500 })).rejects.toThrow(/invalid path/)
   })
 
   it('clamps an out-of-range max_lines into [1, ceiling]', async () => {
@@ -149,16 +151,16 @@ describe('diffRepo', () => {
     await fs.writeFile(path.join(repo, 'a.txt'), 'a-changed\n', 'utf-8')
     // 0 should be clamped to 1 — but a single-line file diff has more than 1 line of header,
     // so we expect truncation rather than the file's full diff. Verify it doesn't crash.
-    const r1 = await diffRepo(repo, { staged: false, max_lines: 0 })
+    const r1 = await diffRepo(SAFE_ROOTS, repo, { staged: false, max_lines: 0 })
     expect(r1.files[0]?.truncated).toBe(true)
     // Above ceiling — should clamp down without throwing.
-    const r2 = await diffRepo(repo, { staged: false, max_lines: DIFF_MAX_LINES_CEILING + 999 })
+    const r2 = await diffRepo(SAFE_ROOTS, repo, { staged: false, max_lines: DIFF_MAX_LINES_CEILING + 999 })
     expect(r2.files[0]?.truncated).toBe(false)
   })
 
   it('wraps git failures with a "git diff failed:" prefix', async () => {
     const notARepo = path.join(tmpRoot, 'not-a-repo')
     await fs.mkdir(notARepo, { recursive: true })
-    await expect(diffRepo(notARepo, { staged: false, max_lines: 500 })).rejects.toThrow(/git diff failed:/)
+    await expect(diffRepo(SAFE_ROOTS, notARepo, { staged: false, max_lines: 500 })).rejects.toThrow(/git diff failed:/)
   })
 })

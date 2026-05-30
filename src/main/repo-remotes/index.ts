@@ -1,6 +1,5 @@
-import { SAFE_ROOTS } from './config.js'
-import { GIT_LOCAL_TIMEOUT_MS, runGitCapture } from './utils/git-exec.js'
-import { resolveAgainstSafeRoots } from './utils/paths.js'
+import { GIT_LOCAL_TIMEOUT_MS, runGitCapture } from '../../utils/git-exec.js'
+import { resolveAgainstSafeRoots } from '../../utils/paths.js'
 
 export interface RemoteEntry {
   name: string
@@ -56,8 +55,8 @@ const readRemotes = async (resolvedRepo: string): Promise<RemoteEntry[]> => {
  * List configured remotes for a repo. Read-only — no network, no mutation.
  * `abs_path` is revalidated against SAFE_ROOTS as defence in depth.
  */
-export const listRemotes = async (absPath: string): Promise<ListRemotesResult> => {
-  const resolved = await resolveAgainstSafeRoots(absPath, SAFE_ROOTS)
+export const listRemotes = async (safeRoots: readonly string[], absPath: string): Promise<ListRemotesResult> => {
+  const resolved = await resolveAgainstSafeRoots(absPath, safeRoots)
   const fetched_at = new Date().toISOString()
   const remotes = await readRemotes(resolved)
   return { abs_path: resolved, fetched_at, remotes }
@@ -75,8 +74,8 @@ export interface SetUrlOptions {
  * URL (`git remote set-url --push`); otherwise updates the fetch URL.
  * Idempotent: running twice with the same args produces the same end state.
  */
-export const setRemoteUrl = async (absPath: string, opts: SetUrlOptions): Promise<MutateRemoteResult> => {
-  const resolved = await resolveAgainstSafeRoots(absPath, SAFE_ROOTS)
+export const setRemoteUrl = async (safeRoots: readonly string[], absPath: string, opts: SetUrlOptions): Promise<MutateRemoteResult> => {
+  const resolved = await resolveAgainstSafeRoots(absPath, safeRoots)
   const before = findRemote(await readRemotes(resolved), opts.remote)
   if (!before) {
     throw new Error(`remote "${opts.remote}" does not exist; use git_repo_remote_add to create it`)
@@ -103,8 +102,8 @@ export interface AddRemoteOptions {
  * Add a new remote. Non-idempotent: the second call fails because the remote
  * already exists. Fetches no objects.
  */
-export const addRemote = async (absPath: string, opts: AddRemoteOptions): Promise<MutateRemoteResult> => {
-  const resolved = await resolveAgainstSafeRoots(absPath, SAFE_ROOTS)
+export const addRemote = async (safeRoots: readonly string[], absPath: string, opts: AddRemoteOptions): Promise<MutateRemoteResult> => {
+  const resolved = await resolveAgainstSafeRoots(absPath, safeRoots)
   const existing = findRemote(await readRemotes(resolved), opts.remote)
   if (existing) {
     throw new Error(`remote "${opts.remote}" already exists (fetch=${existing.fetch_url}); use git_repo_remote_set_url to change its URL`)
@@ -128,8 +127,8 @@ export interface RemoveRemoteOptions {
  * remote-tracking refs (`refs/remotes/<name>/*`). Working-tree files are
  * untouched. Idempotent end state: gone is gone.
  */
-export const removeRemote = async (absPath: string, opts: RemoveRemoteOptions): Promise<MutateRemoteResult> => {
-  const resolved = await resolveAgainstSafeRoots(absPath, SAFE_ROOTS)
+export const removeRemote = async (safeRoots: readonly string[], absPath: string, opts: RemoveRemoteOptions): Promise<MutateRemoteResult> => {
+  const resolved = await resolveAgainstSafeRoots(absPath, safeRoots)
   const before = findRemote(await readRemotes(resolved), opts.remote)
   if (!before) {
     throw new Error(`remote "${opts.remote}" does not exist`)

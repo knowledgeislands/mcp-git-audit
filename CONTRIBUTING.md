@@ -32,9 +32,10 @@ bun run lint:md             # prettier + markdownlint for *.md
 
 ### Code
 
-- **TypeScript ES modules** — `"type": "module"`, internal imports use `.js` extensions (e.g. `from './audit.js'`) so `tsc` emits valid JS.
+- **TypeScript ES modules** — `"type": "module"`, internal imports use `.js` extensions (e.g. `from './scan.js'`) so `tsc` emits valid JS.
+- **Layout**: config lives in `src/config/index.ts` (`loadConfig()` — no module-level env reads); the real implementation lives under `src/main/<area>/` and takes the `Config` slice it needs as its first argument; `src/tools/<area>/index.ts` holds thin tool defs; the stdio wrapper is `src/mcp-server/index.ts`. See CLAUDE.md → "Project layout & config injection".
 - **Arrow functions** for top-level declarations (`export const foo = () => …`).
-- **Strict path safety**: any tool argument that points at the filesystem must go through `resolveAgainstSafeRoots(...)` from `src/utils.ts`. Inputs that escape every configured safe root throw `not inside any configured safe_root`.
+- **Strict path safety**: any tool argument that points at the filesystem must go through `resolveAgainstSafeRoots(...)` from `src/utils/paths.ts`, passing the configured `cfg.safeRoots`. Inputs that escape every configured safe root throw `not inside any configured safe_root`.
 - **`git` invocations**: shell out via `execFile` (never `exec`) with a hard per-call timeout. Errors are caught per-repo and aggregated into the result's `errors[]` rather than failing the whole call.
 - **Errors**: tools return MCP errors via `errorResult(...)`; structured results via `jsonResult(...)`.
 - **Annotations**: be honest with `readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint` on every tool registration.
@@ -61,7 +62,7 @@ Add `!` for breaking changes (`feat!:` / `fix!:`) — bumps major.
 ### Testing
 
 - New code should ship with tests. Vitest is configured with V8 coverage and has thresholds in `vitest.config.ts` — if your change drops coverage below the threshold, CI fails.
-- Test repos are created with real `git init` inside `os.tmpdir()`; tests share `MCP_GIT_AUDIT_SAFE_ROOTS` (set to a tmpdir in `vitest.config.ts`), so tests should clean up after themselves with `beforeAll`/`afterAll`.
+- Test repos are created with real `git init` inside `os.tmpdir()`. Config is injected, not read from env: tests pass an explicit `safeRoots`/`Config`/`AuditConfig` value into the `main/` functions (no `process.env` mutation, no `vi.resetModules()` dance). The fixture safe root is a tmpdir, so tests should clean up after themselves with `beforeAll`/`afterAll`.
 
 ## Before opening a PR
 

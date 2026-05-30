@@ -1,6 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
-import { fetchRepo, pullRepo, pushRepo } from '../../sync.js'
+import type { Config } from '../../config/index.js'
+import { fetchRepo, pullRepo, pushRepo } from '../../main/repo-sync/index.js'
 import { DESTRUCTIVE_REMOTE, WRITE_IDEMPOTENT_REMOTE } from '../../utils/annotations.js'
 import { branchNameSchema, remoteNameSchema } from '../../utils/git-exec.js'
 import { errorResult, jsonResult } from '../../utils/results.js'
@@ -49,7 +50,7 @@ const pushInput = z
   })
   .strict()
 
-export const registerRepoSyncTools = (server: McpServer): void => {
+export const registerRepoSyncTools = (server: McpServer, cfg: Config): void => {
   server.registerTool(
     'git_repo_fetch',
     {
@@ -73,7 +74,7 @@ Returns:
     },
     async ({ abs_path, remote, prune, tags, all_remotes, dry_run }) => {
       try {
-        return jsonResult(await fetchRepo(abs_path, { remote, prune, tags, all_remotes, dry_run }))
+        return jsonResult(await fetchRepo(cfg.safeRoots, abs_path, { remote, prune, tags, all_remotes, dry_run }))
       } catch (err) {
         return errorResult('fetching', err)
       }
@@ -106,7 +107,7 @@ Returns:
     },
     async ({ abs_path, remote, branch, rebase, ff_only, autostash, dry_run }) => {
       try {
-        return jsonResult(await pullRepo(abs_path, { remote, branch, rebase, ff_only, autostash, dry_run }))
+        return jsonResult(await pullRepo(cfg.safeRoots, abs_path, { remote, branch, rebase, ff_only, autostash, dry_run }))
       } catch (err) {
         return errorResult('pulling', err)
       }
@@ -138,7 +139,7 @@ Returns:
     },
     async ({ abs_path, remote, branch, force_mode, set_upstream, tags, delete: deleteFlag, dry_run }) => {
       try {
-        return jsonResult(await pushRepo(abs_path, { remote, branch, force_mode, set_upstream, tags, delete: deleteFlag, dry_run }))
+        return jsonResult(await pushRepo(cfg.safeRoots, abs_path, { remote, branch, force_mode, set_upstream, tags, delete: deleteFlag, dry_run }))
       } catch (err) {
         return errorResult('pushing', err)
       }

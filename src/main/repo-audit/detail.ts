@@ -1,9 +1,8 @@
 import { execFile } from 'node:child_process'
 import * as path from 'node:path'
 import { promisify } from 'node:util'
-import { SAFE_ROOTS } from './config.js'
-import { errMessage } from './utils/errors.js'
-import { resolveAndLocateAgainstSafeRoots } from './utils/paths.js'
+import { errMessage } from '../../utils/errors.js'
+import { resolveAndLocateAgainstSafeRoots } from '../../utils/paths.js'
 
 const execFileP = promisify(execFile)
 
@@ -140,12 +139,12 @@ const runGitDetail = async (repo: string, args: string[]): Promise<string> => {
 /**
  * Return commit history + working-tree status for a single repo identified by
  * an absolute path. The caller is responsible for ensuring `absPath` has been
- * revalidated against `SAFE_ROOTS` — but we re-check here as defence in depth.
+ * revalidated against `safeRoots` — but we re-check here as defence in depth.
  * No fetching, no diff content, no cross-repo work.
  */
-export const repoDetail = async (absPath: string, opts: RepoDetailOptions): Promise<RepoDetailResult> => {
+export const repoDetail = async (safeRoots: readonly string[], absPath: string, opts: RepoDetailOptions): Promise<RepoDetailResult> => {
   const fetched_at = new Date().toISOString()
-  const { resolved, containingRoot } = await resolveAndLocateAgainstSafeRoots(absPath, SAFE_ROOTS)
+  const { resolved, containingRoot } = await resolveAndLocateAgainstSafeRoots(absPath, safeRoots)
   const relPath = path.relative(containingRoot, resolved).split(path.sep).join('/')
 
   const requested = Math.min(Math.max(1, Math.trunc(opts.commits)), MAX_COMMITS)

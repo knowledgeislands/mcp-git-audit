@@ -1,7 +1,6 @@
-import { SAFE_ROOTS } from './config.js'
-import { errMessage } from './utils/errors.js'
-import { GIT_LOCAL_TIMEOUT_MS, runGitCapture } from './utils/git-exec.js'
-import { resolveAgainstSafeRoots } from './utils/paths.js'
+import { errMessage } from '../../utils/errors.js'
+import { GIT_LOCAL_TIMEOUT_MS, runGitCapture } from '../../utils/git-exec.js'
+import { resolveAgainstSafeRoots } from '../../utils/paths.js'
 
 /**
  * Hard ceiling on `max_lines`. The schema caps user input at 2000, but the
@@ -160,8 +159,8 @@ const validateRelPaths = (paths: readonly string[] | undefined): string[] => {
  * is recorded on that file entry; subsequent files are likewise null+truncated.
  * The top-level `truncated` is the disjunction over file entries.
  */
-export const diffRepo = async (absPath: string, opts: DiffOptions): Promise<DiffResult> => {
-  const resolved = await resolveAgainstSafeRoots(absPath, SAFE_ROOTS)
+export const diffRepo = async (safeRoots: readonly string[], absPath: string, opts: DiffOptions): Promise<DiffResult> => {
+  const resolved = await resolveAgainstSafeRoots(absPath, safeRoots)
   const paths = validateRelPaths(opts.paths)
   const maxLines = Math.min(Math.max(1, Math.trunc(opts.max_lines)), DIFF_MAX_LINES_CEILING)
   const fetched_at = new Date().toISOString()

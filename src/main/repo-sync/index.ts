@@ -1,7 +1,6 @@
-import { SAFE_ROOTS } from './config.js'
-import { errMessage } from './utils/errors.js'
-import { GIT_LOCAL_TIMEOUT_MS, GIT_NETWORK_TIMEOUT_MS, runGitCapture } from './utils/git-exec.js'
-import { resolveAgainstSafeRoots } from './utils/paths.js'
+import { errMessage } from '../../utils/errors.js'
+import { GIT_LOCAL_TIMEOUT_MS, GIT_NETWORK_TIMEOUT_MS, runGitCapture } from '../../utils/git-exec.js'
+import { resolveAgainstSafeRoots } from '../../utils/paths.js'
 
 interface SyncResultBase {
   abs_path: string
@@ -58,8 +57,8 @@ const buildFetchArgs = (opts: FetchOptions): string[] => {
  * to the remote but doesn't update local refs, so the user gets a real preview
  * of what would change.
  */
-export const fetchRepo = async (absPath: string, opts: FetchOptions): Promise<FetchResult> => {
-  const resolved = await resolveAgainstSafeRoots(absPath, SAFE_ROOTS)
+export const fetchRepo = async (safeRoots: readonly string[], absPath: string, opts: FetchOptions): Promise<FetchResult> => {
+  const resolved = await resolveAgainstSafeRoots(absPath, safeRoots)
   const ran_at = new Date().toISOString()
   const args = buildFetchArgs(opts)
   try {
@@ -116,8 +115,8 @@ const buildPullArgs = (opts: Omit<PullOptions, 'branch'> & { branch: string }): 
  * `dry_run=true` only fetches (no merge/rebase) — git pull doesn't support a
  * native dry-run, so we approximate it by running `git fetch` instead.
  */
-export const pullRepo = async (absPath: string, opts: PullOptions): Promise<PullResult> => {
-  const resolved = await resolveAgainstSafeRoots(absPath, SAFE_ROOTS)
+export const pullRepo = async (safeRoots: readonly string[], absPath: string, opts: PullOptions): Promise<PullResult> => {
+  const resolved = await resolveAgainstSafeRoots(absPath, safeRoots)
   const ran_at = new Date().toISOString()
   if (opts.ff_only && opts.rebase) {
     throw new Error('ff_only and rebase are mutually exclusive — pick one')
@@ -213,8 +212,8 @@ const buildPushArgs = (opts: PushOptions & { branch: string }): string[] => {
  * `dry_run=true` is passed through to git itself (`git push --dry-run`); git
  * negotiates with the remote but doesn't update any refs.
  */
-export const pushRepo = async (absPath: string, opts: PushOptions): Promise<PushResult> => {
-  const resolved = await resolveAgainstSafeRoots(absPath, SAFE_ROOTS)
+export const pushRepo = async (safeRoots: readonly string[], absPath: string, opts: PushOptions): Promise<PushResult> => {
+  const resolved = await resolveAgainstSafeRoots(absPath, safeRoots)
   const ran_at = new Date().toISOString()
   const { branch: currentBranch, detached } = await readCurrentBranch(resolved)
   if (detached && opts.branch === undefined) {

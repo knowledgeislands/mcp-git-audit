@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
+import { errMessage } from '../../utils/errors.js'
 import type { ScannedRepo, ScanResult } from './scan.js'
-import { errMessage } from './utils/errors.js'
 
 const execFileP = promisify(execFile)
 

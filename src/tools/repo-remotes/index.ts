@@ -1,6 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
-import { addRemote, listRemotes, removeRemote, setRemoteUrl } from '../../remotes.js'
+import type { Config } from '../../config/index.js'
+import { addRemote, listRemotes, removeRemote, setRemoteUrl } from '../../main/repo-remotes/index.js'
 import { DESTRUCTIVE, READ_ONLY, WRITE, WRITE_IDEMPOTENT } from '../../utils/annotations.js'
 import { remoteNameSchema, remoteUrlSchema } from '../../utils/git-exec.js'
 import { errorResult, jsonResult } from '../../utils/results.js'
@@ -39,7 +40,7 @@ const removeInput = z
   })
   .strict()
 
-export const registerRepoRemotesTools = (server: McpServer): void => {
+export const registerRepoRemotesTools = (server: McpServer, cfg: Config): void => {
   server.registerTool(
     'git_repo_remotes_list',
     {
@@ -58,7 +59,7 @@ Returns:
     },
     async ({ abs_path }) => {
       try {
-        return jsonResult(await listRemotes(abs_path))
+        return jsonResult(await listRemotes(cfg.safeRoots, abs_path))
       } catch (err) {
         return errorResult('listing remotes', err)
       }
@@ -87,7 +88,7 @@ Returns:
     },
     async ({ abs_path, remote, url, push, dry_run }) => {
       try {
-        return jsonResult(await setRemoteUrl(abs_path, { remote, url, push, dry_run }))
+        return jsonResult(await setRemoteUrl(cfg.safeRoots, abs_path, { remote, url, push, dry_run }))
       } catch (err) {
         return errorResult('setting remote url', err)
       }
@@ -115,7 +116,7 @@ Returns:
     },
     async ({ abs_path, remote, url, dry_run }) => {
       try {
-        return jsonResult(await addRemote(abs_path, { remote, url, dry_run }))
+        return jsonResult(await addRemote(cfg.safeRoots, abs_path, { remote, url, dry_run }))
       } catch (err) {
         return errorResult('adding remote', err)
       }
@@ -142,7 +143,7 @@ Returns:
     },
     async ({ abs_path, remote, dry_run }) => {
       try {
-        return jsonResult(await removeRemote(abs_path, { remote, dry_run }))
+        return jsonResult(await removeRemote(cfg.safeRoots, abs_path, { remote, dry_run }))
       } catch (err) {
         return errorResult('removing remote', err)
       }

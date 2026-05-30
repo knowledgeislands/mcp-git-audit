@@ -29,6 +29,33 @@
   "engines": {
     "node": ">=22.0.0"
   },
+  "exports": {
+    ".": {
+      "types": "./dist/mcp-server/index.d.ts",
+      "import": "./dist/mcp-server/index.js"
+    },
+    "./config": {
+      "types": "./dist/config/index.d.ts",
+      "import": "./dist/config/index.js"
+    },
+    "./repo-audit": {
+      "types": "./dist/main/repo-audit/index.d.ts",
+      "import": "./dist/main/repo-audit/index.js"
+    },
+    "./repo-commit": {
+      "types": "./dist/main/repo-commit/index.d.ts",
+      "import": "./dist/main/repo-commit/index.js"
+    },
+    "./repo-remotes": {
+      "types": "./dist/main/repo-remotes/index.d.ts",
+      "import": "./dist/main/repo-remotes/index.js"
+    },
+    "./repo-sync": {
+      "types": "./dist/main/repo-sync/index.d.ts",
+      "import": "./dist/main/repo-sync/index.js"
+    },
+    "./package.json": "./package.json"
+  },
   "files": [
     "dist"
   ],

@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
-import { commitRepo } from '../../commit.js'
-import { DIFF_MAX_LINES_CEILING, diffRepo } from '../../diff.js'
+import type { Config } from '../../config/index.js'
+import { commitRepo, DIFF_MAX_LINES_CEILING, diffRepo } from '../../main/repo-commit/index.js'
 import { DESTRUCTIVE_ONESHOT, READ_ONLY } from '../../utils/annotations.js'
 import { errorResult, jsonResult } from '../../utils/results.js'
 
@@ -60,7 +60,7 @@ const commitInput = z
   })
   .strict()
 
-export const registerRepoCommitTools = (server: McpServer): void => {
+export const registerRepoCommitTools = (server: McpServer, cfg: Config): void => {
   server.registerTool(
     'git_repo_diff',
     {
@@ -84,7 +84,7 @@ Returns:
     },
     async ({ abs_path, staged, paths, max_lines }) => {
       try {
-        return jsonResult(await diffRepo(abs_path, { staged, paths, max_lines }))
+        return jsonResult(await diffRepo(cfg.safeRoots, abs_path, { staged, paths, max_lines }))
       } catch (err) {
         return errorResult('reading diff', err)
       }
@@ -120,7 +120,7 @@ Returns:
     },
     async ({ abs_path, message, stage, paths, dry_run, allow_empty }) => {
       try {
-        return jsonResult(await commitRepo(abs_path, { message, stage, paths, dry_run, allow_empty }))
+        return jsonResult(await commitRepo(cfg.safeRoots, abs_path, { message, stage, paths, dry_run, allow_empty }))
       } catch (err) {
         return errorResult('committing', err)
       }

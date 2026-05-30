@@ -1,7 +1,6 @@
-import { SAFE_ROOTS } from './config.js'
-import { errMessage } from './utils/errors.js'
-import { GIT_LOCAL_TIMEOUT_MS, runGitCapture } from './utils/git-exec.js'
-import { resolveAgainstSafeRoots } from './utils/paths.js'
+import { errMessage } from '../../utils/errors.js'
+import { GIT_LOCAL_TIMEOUT_MS, runGitCapture } from '../../utils/git-exec.js'
+import { resolveAgainstSafeRoots } from '../../utils/paths.js'
 
 export type CommitStage = 'all_tracked' | 'all' | 'paths' | 'none'
 
@@ -80,8 +79,8 @@ const readHeadSha = async (resolvedRepo: string): Promise<string> => {
  * newline characters — this matches the validators in `git-exec.ts` and
  * defends in depth against option-injection through the pathspec.
  */
-export const commitRepo = async (absPath: string, opts: CommitOptions): Promise<CommitResult> => {
-  const resolved = await resolveAgainstSafeRoots(absPath, SAFE_ROOTS)
+export const commitRepo = async (safeRoots: readonly string[], absPath: string, opts: CommitOptions): Promise<CommitResult> => {
+  const resolved = await resolveAgainstSafeRoots(absPath, safeRoots)
   const ran_at = new Date().toISOString()
 
   if (opts.message.length === 0) throw new Error('commit message must not be empty')

@@ -19,9 +19,10 @@ const git = (cwd: string, ...args: string[]) =>
     }
   })
 
-// vitest.config.ts pins MCP_GIT_AUDIT_SAFE_ROOTS to <tmpdir>/mcp-git-audit-tests
-// before config.ts is loaded, so fixtures must live inside that root.
+// Config is injected, not read from env: tests pass an explicit safeRoots list
+// scoped to the fixture root. Fixtures must live inside that root.
 const TEST_ROOT = path.join(os.tmpdir(), 'mcp-git-audit-tests')
+const SAFE_ROOTS: readonly string[] = [TEST_ROOT]
 const tmpRoot = path.join(TEST_ROOT, 'detail', `run-${process.pid}`)
 
 beforeAll(async () => {
@@ -77,7 +78,7 @@ afterAll(async () => {
 
 describe('repoDetail', () => {
   it('returns the requested number of commits, newest first, with files count populated', async () => {
-    const result = await repoDetail(path.join(tmpRoot, 'active'), { commits: 5, include_diffstat: false })
+    const result = await repoDetail(SAFE_ROOTS, path.join(tmpRoot, 'active'), { commits: 5, include_diffstat: false })
     expect(result.error).toBeUndefined()
     expect(result.commits.length).toBe(5)
     expect(result.commits[0]?.subject).toBe('commit 6')
@@ -96,13 +97,13 @@ describe('repoDetail', () => {
   })
 
   it('clamps an out-of-range commits value (defence in depth — the schema also caps at 50)', async () => {
-    const result = await repoDetail(path.join(tmpRoot, 'active'), { commits: 999, include_diffstat: false })
+    const result = await repoDetail(SAFE_ROOTS, path.join(tmpRoot, 'active'), { commits: 999, include_diffstat: false })
     expect(result.commits.length).toBeLessThanOrEqual(50)
     expect(result.commits.length).toBe(6)
   })
 
   it('populates diffstat[] when include_diffstat=true; files matches diffstat.length; binary files report 0/0', async () => {
-    const result = await repoDetail(path.join(tmpRoot, 'active'), { commits: 3, include_diffstat: true })
+    const result = await repoDetail(SAFE_ROOTS, path.join(tmpRoot, 'active'), { commits: 3, include_diffstat: true })
     expect(result.commits.length).toBe(3)
     for (const c of result.commits) {
       expect(Array.isArray(c.diffstat)).toBe(true)
@@ -123,7 +124,7 @@ describe('repoDetail', () => {
   })
 
   it('working_tree.modified length equals summary.modified + summary.untracked; status codes are raw porcelain', async () => {
-    const result = await repoDetail(path.join(tmpRoot, 'active'), { commits: 1, include_diffstat: false })
+    const result = await repoDetail(SAFE_ROOTS, path.join(tmpRoot, 'active'), { commits: 1, include_diffstat: false })
     const { modified, summary } = result.working_tree
     expect(modified.length).toBe(summary.modified + summary.untracked)
     expect(summary.modified).toBeGreaterThan(0)
@@ -142,30 +143,30 @@ describe('repoDetail', () => {
   })
 
   it("returns commits: [] (not an error) for a freshly init'd repo with no commits", async () => {
-    const result = await repoDetail(path.join(tmpRoot, 'empty'), { commits: 10, include_diffstat: false })
+    const result = await repoDetail(SAFE_ROOTS, path.join(tmpRoot, 'empty'), { commits: 10, include_diffstat: false })
     expect(result.commits).toEqual([])
     expect(result.error).toBeUndefined()
     expect(result.working_tree.modified).toEqual([])
   })
 
   it('surfaces a generic git log failure via the error field while still returning a result envelope', async () => {
-    const result = await repoDetail(path.join(tmpRoot, 'corrupt'), { commits: 5, include_diffstat: false })
+    const result = await repoDetail(SAFE_ROOTS, path.join(tmpRoot, 'corrupt'), { commits: 5, include_diffstat: false })
     expect(result.commits).toEqual([])
     expect(result.error).toMatch(/git log failed:/)
     expect(result.abs_path.endsWith('/corrupt')).toBe(true)
   })
 
   it('rejects abs_path outside MCP_GIT_AUDIT_SAFE_ROOTS', async () => {
-    await expect(repoDetail('/etc', { commits: 1, include_diffstat: false })).rejects.toThrow(/not inside any configured safe_root/)
+    await expect(repoDetail(SAFE_ROOTS, '/etc', { commits: 1, include_diffstat: false })).rejects.toThrow(/not inside any configured safe_root/)
   })
 
   it('rejects path-traversal-style escapes via ..', async () => {
-    await expect(repoDetail(path.join(tmpRoot, 'active', '..', '..', '..', '..'), { commits: 1, include_diffstat: false })).rejects.toThrow(/not inside any configured safe_root/)
+    await expect(repoDetail(SAFE_ROOTS, path.join(tmpRoot, 'active', '..', '..', '..', '..'), { commits: 1, include_diffstat: false })).rejects.toThrow(/not inside any configured safe_root/)
   })
 
   it('completes a typical 10-commit no-diffstat call well under 1s', async () => {
     const start = Date.now()
-    const result = await repoDetail(path.join(tmpRoot, 'active'), { commits: 10, include_diffstat: false })
+    const result = await repoDetail(SAFE_ROOTS, path.join(tmpRoot, 'active'), { commits: 10, include_diffstat: false })
     const elapsed = Date.now() - start
     expect(result.commits.length).toBeGreaterThan(0)
     expect(elapsed).toBeLessThan(1000)

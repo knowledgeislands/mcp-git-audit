@@ -1,8 +1,4 @@
-import * as os from 'node:os'
-import * as path from 'node:path'
 import { defineConfig } from 'vitest/config'
-
-const TEST_ROOT = path.join(os.tmpdir(), 'mcp-git-audit-tests')
 
 export default defineConfig({
   test: {
@@ -10,20 +6,20 @@ export default defineConfig({
     environment: 'node',
     include: ['src/**/*.test.ts'],
     fileParallelism: false,
-    env: {
-      MCP_GIT_AUDIT_SAFE_ROOTS: TEST_ROOT
-    },
+    // No env seeding needed: config is loaded explicitly via loadConfig() and
+    // passed into calls, so nothing reads process.env at import time. Tests
+    // build their own Config / AuditConfig (or pass an explicit safeRoots list).
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov', 'html'],
       include: ['src/**/*.ts'],
       exclude: [
         'src/**/*.test.ts',
-        // Server entry points and tool registration aggregators are pure
-        // wiring (every line is `server.registerTool(...)`); their behaviour
-        // is exercised by `bun run server:mcp:inspect` and the smoke test in CI.
+        // Server entry point and tool registration aggregators are pure wiring
+        // (every line is `server.registerTool(...)` or a re-export); their
+        // behaviour is exercised by `bun run server:mcp:inspect`, the smoke
+        // test in CI, and the per-area main tests they delegate to.
         'src/mcp-server/index.ts',
-        'src/tools/index.ts',
         'src/tools/**/index.ts',
         // Pure data: annotation presets are referenced only from tool
         // registration sites (which are themselves excluded).
