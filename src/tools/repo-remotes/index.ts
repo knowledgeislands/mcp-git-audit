@@ -2,7 +2,6 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import { addRemote, listRemotes, removeRemote, setRemoteUrl } from '../../remotes.js'
 import { DESTRUCTIVE, READ_ONLY, WRITE, WRITE_IDEMPOTENT } from '../../utils/annotations.js'
-import { errMessage } from '../../utils/errors.js'
 import { remoteNameSchema, remoteUrlSchema } from '../../utils/git-exec.js'
 import { errorResult, jsonResult } from '../../utils/results.js'
 
@@ -61,7 +60,7 @@ Returns:
       try {
         return jsonResult(await listRemotes(abs_path))
       } catch (err) {
-        return errorResult(`Error listing remotes: ${errMessage(err)}`)
+        return errorResult('listing remotes', err)
       }
     }
   )
@@ -90,7 +89,7 @@ Returns:
       try {
         return jsonResult(await setRemoteUrl(abs_path, { remote, url, push, dry_run }))
       } catch (err) {
-        return errorResult(`Error setting remote URL: ${errMessage(err)}`)
+        return errorResult('setting remote url', err)
       }
     }
   )
@@ -118,7 +117,7 @@ Returns:
       try {
         return jsonResult(await addRemote(abs_path, { remote, url, dry_run }))
       } catch (err) {
-        return errorResult(`Error adding remote: ${errMessage(err)}`)
+        return errorResult('adding remote', err)
       }
     }
   )
@@ -145,7 +144,7 @@ Returns:
       try {
         return jsonResult(await removeRemote(abs_path, { remote, dry_run }))
       } catch (err) {
-        return errorResult(`Error removing remote: ${errMessage(err)}`)
+        return errorResult('removing remote', err)
       }
     }
   )

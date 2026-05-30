@@ -13,6 +13,7 @@
 import * as fs from 'node:fs/promises'
 import * as path from 'node:path'
 import { type AccessLevel, AUDIT_LOG_KEEP, AUDIT_LOG_MAX_BYTES, AUDIT_LOG_MODE, AUDIT_LOG_PATH } from '../config.js'
+import { errMessage } from './errors.js'
 
 export interface AuditEvent {
   ts: string
@@ -52,8 +53,10 @@ const rotateIfNeeded = async (): Promise<void> => {
   let size: number
   try {
     size = (await fs.stat(AUDIT_LOG_PATH)).size
+    /* v8 ignore start -- stat only fails if the live log vanishes between the append and this check (a race); skip rotation when it does. */
   } catch {
     return
+    /* v8 ignore stop */
   }
   if (size <= AUDIT_LOG_MAX_BYTES) return
   try {
@@ -71,11 +74,11 @@ const rotateIfNeeded = async (): Promise<void> => {
       await fs.rm(AUDIT_LOG_PATH, { force: true })
     }
   } catch (err) {
-    console.error(`[audit-log] rotation failed: ${err instanceof Error ? err.message : String(err)}`)
+    console.error(`[audit-log] rotation failed: ${errMessage(err)}`)
   }
 }
 
-export const appendAuditEvent = async (event: AuditEvent): Promise<void> => {
+const writeAuditEvent = async (event: AuditEvent): Promise<void> => {
   try {
     await fs.mkdir(path.dirname(AUDIT_LOG_PATH), { recursive: true })
     await fs.appendFile(AUDIT_LOG_PATH, `${JSON.stringify(event)}\n`, { encoding: 'utf-8', mode: 0o600 })
@@ -89,8 +92,19 @@ export const appendAuditEvent = async (event: AuditEvent): Promise<void> => {
     }
     await rotateIfNeeded()
   } catch (err) {
-    console.error(`[audit-log] failed to write: ${err instanceof Error ? err.message : String(err)}`)
+    console.error(`[audit-log] failed to write: ${errMessage(err)}`)
   }
+}
+
+// Serialize appends through a single chain so concurrent callers can't race on
+// the append → stat → rotate sequence (two simultaneous rotations would have
+// one `rename(live → .1)` lose with ENOENT). Each call awaits the prior one;
+// errors are swallowed inside writeAuditEvent so the chain never rejects.
+let auditQueue: Promise<void> = Promise.resolve()
+
+export const appendAuditEvent = (event: AuditEvent): Promise<void> => {
+  auditQueue = auditQueue.then(() => writeAuditEvent(event))
+  return auditQueue
 }
 
 type ToolCallback = (...callbackArgs: unknown[]) => unknown | Promise<unknown>

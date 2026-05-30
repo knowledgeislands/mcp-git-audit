@@ -92,10 +92,10 @@ Errors:
     async ({ root, max_depth }) => {
       try {
         const resolved = await resolveRootArg(root)
-        if (typeof resolved !== 'string') return errorResult(resolved.error)
+        if (typeof resolved !== 'string') return errorResult('scanning repos', new Error(resolved.error))
         return jsonResult(await scanRoot(resolved, { max_depth }))
       } catch (err) {
-        return errorResult(`Error scanning: ${errMessage(err)}`)
+        return errorResult('scanning repos', err)
       }
     }
   )
@@ -122,7 +122,7 @@ Per-repo failures (e.g. corrupt .git/HEAD) are aggregated into the \`errors\` ar
     async ({ scan, include_stale_days }) => {
       try {
         const rootResolved = await resolveRootArg(scan.root)
-        if (typeof rootResolved !== 'string') return errorResult(rootResolved.error)
+        if (typeof rootResolved !== 'string') return errorResult('auditing repos', new Error(rootResolved.error))
 
         const validatedRepos = []
         for (const r of scan.repos) {
@@ -130,13 +130,13 @@ Per-repo failures (e.g. corrupt .git/HEAD) are aggregated into the \`errors\` ar
             const absResolved = await resolveAgainstSafeRoots(r.abs_path, SAFE_ROOTS)
             validatedRepos.push({ ...r, abs_path: absResolved })
           } catch (err) {
-            return errorResult(`scan.repos[${r.path}].abs_path: ${errMessage(err)}`)
+            return errorResult('auditing repos', new Error(`scan.repos[${r.path}].abs_path: ${errMessage(err)}`))
           }
         }
         const validatedScan: ScanResult = { ...scan, root: rootResolved, repos: validatedRepos }
         return jsonResult(await auditScan(validatedScan, { include_stale_days }))
       } catch (err) {
-        return errorResult(`Error auditing: ${errMessage(err)}`)
+        return errorResult('auditing repos', err)
       }
     }
   )
@@ -165,7 +165,7 @@ Status codes mirror \`git status --porcelain\` verbatim so downstream consumers 
       try {
         return jsonResult(await repoDetail(abs_path, { commits, include_diffstat }))
       } catch (err) {
-        return errorResult(`Error reading repo detail: ${errMessage(err)}`)
+        return errorResult('reading repo detail', err)
       }
     }
   )

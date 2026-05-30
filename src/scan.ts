@@ -21,9 +21,10 @@ export interface ScanOptions {
 
 const groupAndName = (relPath: string): { group: string; name: string } => {
   const parts = relPath.split('/').filter((p) => p.length > 0)
+  /* v8 ignore next -- `?? ''`: parts[0] is only undefined when relPath is empty (root-is-repo), which findRepos filters at depth 0. Defensive fallback. */
   const first = parts[0] ?? ''
-  /* v8 ignore next -- parts[0] is only undefined when relPath is empty (root-is-repo), which findRepos filters at depth 0. Defensive fallback. */
   if (parts.length <= 1) return { group: '(root)', name: first }
+  /* v8 ignore next -- `?? first`: the last element of a length>1 array is never undefined. Defensive fallback. */
   return { group: first, name: parts[parts.length - 1] ?? first }
 }
 
@@ -49,9 +50,10 @@ export const findRepos = async (root: string, maxDepth: number): Promise<string[
       // Any filesystem error while walking is treated as "skip this subtree" —
       // missing dirs (ENOENT), permission denials (EACCES/EPERM), or a non-dir
       // that snuck into the loop (ENOTDIR) should not abort the whole audit.
+      /* v8 ignore start -- the non-NodeError else branch / rethrow is unreachable in tests; readdir always raises an ErrnoException on failure. */
       if (isNodeError(err)) return
-      /* v8 ignore next -- non-NodeError rethrow is unreachable in tests; readdir always raises an ErrnoException on failure. */
       throw err
+      /* v8 ignore stop */
     }
     const gitEntry = entries.find((e) => e.name === '.git')
     if (gitEntry?.isDirectory()) {

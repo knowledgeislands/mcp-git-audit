@@ -3,7 +3,6 @@ import { z } from 'zod'
 import { commitRepo } from '../../commit.js'
 import { DIFF_MAX_LINES_CEILING, diffRepo } from '../../diff.js'
 import { DESTRUCTIVE_ONESHOT, READ_ONLY } from '../../utils/annotations.js'
-import { errMessage } from '../../utils/errors.js'
 import { errorResult, jsonResult } from '../../utils/results.js'
 
 const absPathSchema = z
@@ -87,7 +86,7 @@ Returns:
       try {
         return jsonResult(await diffRepo(abs_path, { staged, paths, max_lines }))
       } catch (err) {
-        return errorResult(`Error reading diff: ${errMessage(err)}`)
+        return errorResult('reading diff', err)
       }
     }
   )
@@ -123,7 +122,7 @@ Returns:
       try {
         return jsonResult(await commitRepo(abs_path, { message, stage, paths, dry_run, allow_empty }))
       } catch (err) {
-        return errorResult(`Error committing: ${errMessage(err)}`)
+        return errorResult('committing', err)
       }
     }
   )

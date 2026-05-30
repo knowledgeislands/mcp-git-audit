@@ -2,7 +2,6 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import { fetchRepo, pullRepo, pushRepo } from '../../sync.js'
 import { DESTRUCTIVE_REMOTE, WRITE_IDEMPOTENT_REMOTE } from '../../utils/annotations.js'
-import { errMessage } from '../../utils/errors.js'
 import { branchNameSchema, remoteNameSchema } from '../../utils/git-exec.js'
 import { errorResult, jsonResult } from '../../utils/results.js'
 
@@ -76,7 +75,7 @@ Returns:
       try {
         return jsonResult(await fetchRepo(abs_path, { remote, prune, tags, all_remotes, dry_run }))
       } catch (err) {
-        return errorResult(`Error fetching: ${errMessage(err)}`)
+        return errorResult('fetching', err)
       }
     }
   )
@@ -109,7 +108,7 @@ Returns:
       try {
         return jsonResult(await pullRepo(abs_path, { remote, branch, rebase, ff_only, autostash, dry_run }))
       } catch (err) {
-        return errorResult(`Error pulling: ${errMessage(err)}`)
+        return errorResult('pulling', err)
       }
     }
   )
@@ -141,7 +140,7 @@ Returns:
       try {
         return jsonResult(await pushRepo(abs_path, { remote, branch, force_mode, set_upstream, tags, delete: deleteFlag, dry_run }))
       } catch (err) {
-        return errorResult(`Error pushing: ${errMessage(err)}`)
+        return errorResult('pushing', err)
       }
     }
   )

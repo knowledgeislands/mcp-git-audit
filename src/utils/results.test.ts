@@ -2,8 +2,18 @@ import { describe, expect, it } from 'vitest'
 import { errorResult, jsonResult } from './results.js'
 
 describe('errorResult', () => {
-  it('builds the MCP error response shape', () => {
-    expect(errorResult('boom')).toEqual({ isError: true, content: [{ type: 'text', text: 'boom' }] })
+  it('builds the MCP error response shape with an action prefix', () => {
+    expect(errorResult('scanning repos', new Error('boom'))).toEqual({
+      isError: true,
+      content: [{ type: 'text', text: 'Error scanning repos: boom' }]
+    })
+  })
+
+  it('coerces a non-Error value via errMessage', () => {
+    expect(errorResult('committing', 'kaboom')).toEqual({
+      isError: true,
+      content: [{ type: 'text', text: 'Error committing: kaboom' }]
+    })
   })
 })
 

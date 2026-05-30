@@ -62,3 +62,34 @@ describe('SAFE_ROOTS', () => {
     await expect(import('./config.js')).rejects.toThrow(/at least one path/)
   })
 })
+
+describe('parseNonNegativeInt (AUDIT_LOG_MAX_BYTES / AUDIT_LOG_KEEP)', () => {
+  afterEach(() => {
+    delete process.env.MCP_GIT_AUDIT_AUDIT_LOG_MAX_BYTES
+    delete process.env.MCP_GIT_AUDIT_AUDIT_LOG_KEEP
+  })
+
+  it('parses a valid non-negative integer', async () => {
+    process.env.MCP_GIT_AUDIT_AUDIT_LOG_MAX_BYTES = '2048'
+    process.env.MCP_GIT_AUDIT_AUDIT_LOG_KEEP = '3'
+    const { AUDIT_LOG_MAX_BYTES, AUDIT_LOG_KEEP } = await import('./config.js')
+    expect(AUDIT_LOG_MAX_BYTES).toBe(2048)
+    expect(AUDIT_LOG_KEEP).toBe(3)
+  })
+
+  it('falls back to the default when unset', async () => {
+    delete process.env.MCP_GIT_AUDIT_AUDIT_LOG_MAX_BYTES
+    const { AUDIT_LOG_MAX_BYTES } = await import('./config.js')
+    expect(AUDIT_LOG_MAX_BYTES).toBe(10 * 1024 * 1024)
+  })
+
+  it('throws on a non-numeric value', async () => {
+    process.env.MCP_GIT_AUDIT_AUDIT_LOG_MAX_BYTES = 'lots'
+    await expect(import('./config.js')).rejects.toThrow(/MCP_GIT_AUDIT_AUDIT_LOG_MAX_BYTES="lots"/)
+  })
+
+  it('throws on a negative value', async () => {
+    process.env.MCP_GIT_AUDIT_AUDIT_LOG_KEEP = '-1'
+    await expect(import('./config.js')).rejects.toThrow(/MCP_GIT_AUDIT_AUDIT_LOG_KEEP="-1"/)
+  })
+})
