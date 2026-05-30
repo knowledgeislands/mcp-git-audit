@@ -69,4 +69,4 @@ Traversal-rejection and command-injection-via-argv tests live in [src/utils/path
 
 ## Tool registration call sites
 
-Tools are registered in [src/tools/repo-audit/index.ts](./src/tools/repo-audit/index.ts), [src/tools/repo-remotes/index.ts](./src/tools/repo-remotes/index.ts), and [src/tools/repo-sync/index.ts](./src/tools/repo-sync/index.ts). To survey the surface, `grep "registerTool" src/tools/*/index.ts`. README's [Available Tools](./README.md#available-tools) tabulates them with purposes and I/O shapes.
+Tools are registered in [src/tools/repo-audit/index.ts](./src/tools/repo-audit/index.ts), [src/tools/repo-commit/index.ts](./src/tools/repo-commit/index.ts), [src/tools/repo-remotes/index.ts](./src/tools/repo-remotes/index.ts), and [src/tools/repo-sync/index.ts](./src/tools/repo-sync/index.ts). To survey the surface, `grep "registerTool" src/tools/*/index.ts`. README's [Available Tools](./README.md#available-tools) tabulates them with purposes and I/O shapes.
