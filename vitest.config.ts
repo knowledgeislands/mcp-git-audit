@@ -6,9 +6,20 @@ export default defineConfig({
     environment: 'node',
     include: ['src/**/*.test.ts'],
     fileParallelism: false,
-    // No env seeding needed: config is loaded explicitly via loadConfig() and
-    // passed into calls, so nothing reads process.env at import time. Tests
-    // build their own Config / AuditConfig (or pass an explicit safeRoots list).
+    // The MCP's own config is loaded explicitly via loadConfig() and passed into
+    // calls — nothing reads process.env at import time, and tests build their own
+    // Config / AuditConfig (or pass an explicit safeRoots list). The only env we
+    // seed is git-config isolation: every test git invocation spreads
+    // ...process.env, so this keeps the suite independent of the host's git config.
+    // GIT_CONFIG_COUNT=0 drops any inherited `-c`-style overrides (e.g. a
+    // safe.bareRepository=explicit injected via GIT_CONFIG_KEY_n/VALUE_n, which
+    // otherwise breaks the bare-remote fixtures the sync tests push to / fetch
+    // from); the /dev/null pair neutralises global + system config files.
+    env: {
+      GIT_CONFIG_GLOBAL: '/dev/null',
+      GIT_CONFIG_SYSTEM: '/dev/null',
+      GIT_CONFIG_COUNT: '0'
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov', 'html'],

@@ -6,6 +6,8 @@ import { resolveAndLocateAgainstSafeRoots } from '../../utils/paths.js'
 
 const execFileP = promisify(execFile)
 
+// Intentionally shorter than GIT_LOCAL_TIMEOUT_MS (8s): detail is a quick per-repo
+// metadata read, so it fails faster than the heavier audit/scan local commands.
 const DETAIL_TIMEOUT_MS = 6000
 const DETAIL_MAX_BUFFER = 8 * 1024 * 1024
 const MAX_COMMITS = 50
