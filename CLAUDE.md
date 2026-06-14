@@ -12,6 +12,8 @@ This project uses Bun (≥ 1.3) for install and dev scripts, but the compiled `d
 
 Run `bun run` with no args for the full script list.
 
+This server targets MCP specification revision **2025-11-25**.
+
 ## Architecture Invariants
 
 ### Project layout & config injection (the workspace MCP shape)
