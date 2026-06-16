@@ -23,6 +23,9 @@ export interface MutateRemoteResult {
   stderr: string
 }
 
+/** Strip `user:pass@` userinfo from a remote URL so credentials never reach a tool result or error message. */
+const redactRemoteUrl = (url: string): string => url.replace(/(\/\/)[^/@\s]+@/g, '$1<redacted>@')
+
 const parseRemoteVerbose = (stdout: string): RemoteEntry[] => {
   // `git remote -v` lines look like:
   //   origin\thttps://github.com/foo/bar.git (fetch)
@@ -35,8 +38,8 @@ const parseRemoteVerbose = (stdout: string): RemoteEntry[] => {
     if (!m) continue
     const [, name, url, kind] = m as unknown as [string, string, string, 'fetch' | 'push']
     const existing = byName.get(name) ?? { fetch_url: '', push_url: '' }
-    if (kind === 'fetch') existing.fetch_url = url
-    else existing.push_url = url
+    if (kind === 'fetch') existing.fetch_url = redactRemoteUrl(url)
+    else existing.push_url = redactRemoteUrl(url)
     byName.set(name, existing)
   }
   return Array.from(byName.entries())

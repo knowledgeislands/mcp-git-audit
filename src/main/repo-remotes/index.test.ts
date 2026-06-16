@@ -78,6 +78,14 @@ describe('listRemotes', () => {
     expect(result.remotes).toEqual([])
   })
 
+  it('redacts user:pass@ credentials in fetch/push URLs, never leaking the raw token', async () => {
+    const repo = await makeRepoWithRemote('creds', 'origin', 'https://user:tok3n@github.com/o/r.git')
+    const result = await listRemotes(SAFE_ROOTS, repo)
+    expect(result.remotes[0]?.fetch_url).toBe('https://<redacted>@github.com/o/r.git')
+    expect(result.remotes[0]?.push_url).toBe('https://<redacted>@github.com/o/r.git')
+    expect(JSON.stringify(result)).not.toContain('tok3n')
+  })
+
   it('rejects abs_path outside the safe roots', async () => {
     await expect(listRemotes(SAFE_ROOTS, '/etc')).rejects.toThrow(/not inside any configured safe_root/)
   })

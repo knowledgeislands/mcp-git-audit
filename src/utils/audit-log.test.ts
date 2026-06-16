@@ -48,6 +48,26 @@ describe('appendAuditEvent / withAuditLog (mcp-git-audit)', () => {
     expect(event.args).toEqual({ root: '/repos' })
   })
 
+  it('redacts URL credentials across string / array / object / primitive arg branches', async () => {
+    const { withAuditLog } = await import('./audit-log.js')
+    const wrapped = withAuditLog(auditCfg({ mode: 'all' }), 'git_repos_scan', 'read', async () => ({ content: [{ type: 'text', text: 'ok' }] }))
+    await wrapped({
+      url: 'https://user:tok3n@github.com/o/r.git',
+      mirrors: ['https://user:tok3n@gitlab.com/o/r.git'],
+      nested: { push_url: 'https://user:tok3n@github.com/o/r.git' },
+      depth: 1
+    })
+    await flushAsync()
+    const raw = (await fs.readFile(logPath, 'utf-8')).trim()
+    expect(raw).toContain('<redacted>')
+    expect(raw).not.toContain('tok3n')
+    const event = JSON.parse(raw)
+    expect(event.args.url).toBe('https://<redacted>@github.com/o/r.git')
+    expect(event.args.mirrors).toEqual(['https://<redacted>@gitlab.com/o/r.git'])
+    expect(event.args.nested.push_url).toBe('https://<redacted>@github.com/o/r.git')
+    expect(event.args.depth).toBe(1)
+  })
+
   it('records ok:false when isError:true', async () => {
     const { withAuditLog } = await import('./audit-log.js')
     const wrapped = withAuditLog(auditCfg({ mode: 'all' }), 'git_repos_scan', 'read', async () => ({ isError: true, content: [{ type: 'text', text: 'bad root' }] }))
