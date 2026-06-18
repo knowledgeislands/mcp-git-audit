@@ -7,6 +7,7 @@ export const errorResult = (action: string, error: unknown) => ({
 
 export const jsonResult = (payload: unknown) => {
   return {
+    structuredContent: payload as Record<string, unknown>,
     content: [{ type: 'text' as const, text: JSON.stringify(payload, null, 2) }]
   }
 }
