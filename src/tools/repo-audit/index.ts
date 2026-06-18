@@ -66,6 +66,61 @@ const detailInput = z
   })
   .strict()
 
+const auditedRepoSchema = z.object({
+  path: z.string(),
+  abs_path: z.string(),
+  group: z.string(),
+  name: z.string(),
+  branch: z.string(),
+  detached: z.boolean(),
+  sha: z.string(),
+  subject: z.string(),
+  rel_date: z.string(),
+  iso_date: z.string(),
+  modified: z.number(),
+  untracked: z.number(),
+  has_remote: z.boolean(),
+  has_upstream: z.boolean(),
+  ahead: z.number(),
+  behind: z.number()
+})
+
+const diffstatEntrySchema = z.object({ added: z.number(), removed: z.number(), path: z.string() })
+
+const commitEntrySchema = z.object({
+  sha: z.string(),
+  subject: z.string(),
+  author: z.string(),
+  iso_date: z.string(),
+  rel_date: z.string(),
+  files: z.number(),
+  diffstat: z.array(diffstatEntrySchema).optional()
+})
+
+const workingTreeSchema = z.object({
+  modified: z.array(z.object({ status: z.string(), path: z.string() })),
+  summary: z.object({ modified: z.number(), untracked: z.number() })
+})
+
+const scanOutput = z.object({ root: z.string(), scanned_at: z.string(), repos: z.array(scannedRepoSchema) })
+
+const auditOutput = z.object({
+  root: z.string(),
+  scanned_at: z.string(),
+  audited_at: z.string(),
+  repos: z.array(auditedRepoSchema),
+  errors: z.array(z.string()).optional()
+})
+
+const detailOutput = z.object({
+  abs_path: z.string(),
+  path: z.string(),
+  fetched_at: z.string(),
+  commits: z.array(commitEntrySchema),
+  working_tree: workingTreeSchema,
+  error: z.string().optional()
+})
+
 export const registerRepoAuditTools = (server: McpServer, cfg: Config): void => {
   server.registerTool(
     'git_repos_scan',
@@ -85,6 +140,7 @@ Errors:
   - "root must be an absolute path or start with ~/" for relative roots.
   - "root is required when multiple safe_roots are configured" when omitted with multiple safe_roots.`,
       inputSchema: scanInput,
+      outputSchema: scanOutput,
       annotations: READ_ONLY
     },
     async ({ root, max_depth }) => {
@@ -115,6 +171,7 @@ Returns:
 
 Per-repo failures (e.g. corrupt .git/HEAD) are aggregated into the \`errors\` array rather than failing the whole call.`,
       inputSchema: auditInput,
+      outputSchema: auditOutput,
       annotations: READ_ONLY
     },
     async ({ scan, include_stale_days }) => {
@@ -157,6 +214,7 @@ Returns:
 
 Status codes mirror \`git status --porcelain\` verbatim so downstream consumers other than the Cowork artifact can interpret them precisely. Errors (timeout, unborn HEAD on a fresh repo with no commits) surface as a \`commits: []\` result with an \`error\` field rather than throwing.`,
       inputSchema: detailInput,
+      outputSchema: detailOutput,
       annotations: READ_ONLY
     },
     async ({ abs_path, commits, include_diffstat }) => {

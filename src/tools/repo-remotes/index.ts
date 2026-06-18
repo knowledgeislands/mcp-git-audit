@@ -40,6 +40,38 @@ const removeInput = z
   })
   .strict()
 
+const remoteEntrySchema = z.object({ name: z.string(), fetch_url: z.string(), push_url: z.string() })
+
+const listRemotesOutput = z.object({ abs_path: z.string(), fetched_at: z.string(), remotes: z.array(remoteEntrySchema) })
+
+const setUrlOutput = z.object({
+  abs_path: z.string(),
+  changed_at: z.string(),
+  dry_run: z.boolean(),
+  remote: z.string(),
+  before: remoteEntrySchema,
+  after: remoteEntrySchema.optional(),
+  stderr: z.string()
+})
+
+const addRemoteOutput = z.object({
+  abs_path: z.string(),
+  changed_at: z.string(),
+  dry_run: z.boolean(),
+  remote: z.string(),
+  after: remoteEntrySchema.optional(),
+  stderr: z.string()
+})
+
+const removeRemoteOutput = z.object({
+  abs_path: z.string(),
+  changed_at: z.string(),
+  dry_run: z.boolean(),
+  remote: z.string(),
+  before: remoteEntrySchema,
+  stderr: z.string()
+})
+
 export const registerRepoRemotesTools = (server: McpServer, cfg: Config): void => {
   server.registerTool(
     'git_repo_remotes_list',
@@ -55,6 +87,7 @@ Args:
 Returns:
   JSON object: { abs_path, fetched_at, remotes: [{ name, fetch_url, push_url }] }. \`push_url\` equals \`fetch_url\` unless an override was set with \`set-url --push\`.`,
       inputSchema: listInput,
+      outputSchema: listRemotesOutput,
       annotations: READ_ONLY
     },
     async ({ abs_path }) => {
@@ -84,6 +117,7 @@ Args:
 Returns:
   JSON object: { abs_path, changed_at, dry_run, remote, before, after?, stderr }. \`after\` is omitted when \`dry_run=true\`.`,
       inputSchema: setUrlInput,
+      outputSchema: setUrlOutput,
       annotations: WRITE_IDEMPOTENT
     },
     async ({ abs_path, remote, url, push, dry_run }) => {
@@ -112,6 +146,7 @@ Args:
 Returns:
   JSON object: { abs_path, changed_at, dry_run, remote, after?, stderr }. \`after\` is omitted when \`dry_run=true\`.`,
       inputSchema: addInput,
+      outputSchema: addRemoteOutput,
       annotations: WRITE
     },
     async ({ abs_path, remote, url, dry_run }) => {
@@ -139,6 +174,7 @@ Args:
 Returns:
   JSON object: { abs_path, changed_at, dry_run, remote, before, stderr }.`,
       inputSchema: removeInput,
+      outputSchema: removeRemoteOutput,
       annotations: DESTRUCTIVE
     },
     async ({ abs_path, remote, dry_run }) => {

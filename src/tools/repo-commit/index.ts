@@ -60,6 +60,38 @@ const commitInput = z
   })
   .strict()
 
+const diffFileSchema = z.object({
+  path: z.string(),
+  status: z.string(),
+  additions: z.number(),
+  deletions: z.number(),
+  diff: z.string().nullable(),
+  truncated: z.boolean()
+})
+
+const diffOutput = z.object({
+  abs_path: z.string(),
+  staged: z.boolean(),
+  fetched_at: z.string(),
+  total_additions: z.number(),
+  total_deletions: z.number(),
+  truncated: z.boolean(),
+  files: z.array(diffFileSchema)
+})
+
+const commitOutput = z.object({
+  abs_path: z.string(),
+  ran_at: z.string(),
+  dry_run: z.boolean(),
+  stage: z.string(),
+  staged_paths: z.array(z.string()),
+  message: z.string(),
+  command: z.string(),
+  sha: z.string().nullable(),
+  stdout: z.string(),
+  stderr: z.string()
+})
+
 export const registerRepoCommitTools = (server: McpServer, cfg: Config): void => {
   server.registerTool(
     'git_repo_diff',
@@ -80,6 +112,7 @@ Args:
 Returns:
   JSON object: { abs_path, staged, fetched_at, total_additions, total_deletions, truncated, files: [{ path, status, additions, deletions, diff, truncated }] }.`,
       inputSchema: diffInput,
+      outputSchema: diffOutput,
       annotations: READ_ONLY
     },
     async ({ abs_path, staged, paths, max_lines }) => {
@@ -116,6 +149,7 @@ Args:
 Returns:
   JSON object: { abs_path, ran_at, dry_run, stage, staged_paths, message, command, sha, stdout, stderr }. \`sha\` is the short SHA of the new HEAD, or \`null\` on dry-run.`,
       inputSchema: commitInput,
+      outputSchema: commitOutput,
       annotations: DESTRUCTIVE_ONESHOT
     },
     async ({ abs_path, message, stage, paths, dry_run, allow_empty }) => {

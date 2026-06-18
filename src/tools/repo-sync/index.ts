@@ -50,6 +50,48 @@ const pushInput = z
   })
   .strict()
 
+const fetchOutput = z.object({
+  abs_path: z.string(),
+  ran_at: z.string(),
+  dry_run: z.boolean(),
+  remote: z.string(),
+  prune: z.boolean(),
+  tags: z.boolean(),
+  all_remotes: z.boolean(),
+  command: z.string(),
+  stdout: z.string(),
+  stderr: z.string()
+})
+
+const pullOutput = z.object({
+  abs_path: z.string(),
+  ran_at: z.string(),
+  dry_run: z.boolean(),
+  remote: z.string(),
+  branch: z.string().optional(),
+  rebase: z.boolean(),
+  ff_only: z.boolean(),
+  autostash: z.boolean(),
+  command: z.string(),
+  stdout: z.string(),
+  stderr: z.string()
+})
+
+const pushOutput = z.object({
+  abs_path: z.string(),
+  ran_at: z.string(),
+  dry_run: z.boolean(),
+  remote: z.string(),
+  branch: z.string().optional(),
+  force_mode: z.string(),
+  set_upstream: z.boolean(),
+  tags: z.boolean(),
+  delete: z.boolean(),
+  command: z.string(),
+  stdout: z.string(),
+  stderr: z.string()
+})
+
 export const registerRepoSyncTools = (server: McpServer, cfg: Config): void => {
   server.registerTool(
     'git_repo_fetch',
@@ -70,6 +112,7 @@ Args:
 Returns:
   JSON object: { abs_path, ran_at, dry_run, remote, prune, tags, all_remotes, command, stdout, stderr }. Most useful output (refs updated) is on \`stderr\` — that's where git writes it.`,
       inputSchema: fetchInput,
+      outputSchema: fetchOutput,
       annotations: WRITE_IDEMPOTENT_REMOTE
     },
     async ({ abs_path, remote, prune, tags, all_remotes, dry_run }) => {
@@ -103,6 +146,7 @@ Args:
 Returns:
   JSON object: { abs_path, ran_at, dry_run, remote, branch, rebase, ff_only, autostash, command, stdout, stderr }.`,
       inputSchema: pullInput,
+      outputSchema: pullOutput,
       annotations: DESTRUCTIVE_REMOTE
     },
     async ({ abs_path, remote, branch, rebase, ff_only, autostash, dry_run }) => {
@@ -135,6 +179,7 @@ Args:
 Returns:
   JSON object: { abs_path, ran_at, dry_run, remote, branch, force_mode, set_upstream, tags, delete, command, stdout, stderr }.`,
       inputSchema: pushInput,
+      outputSchema: pushOutput,
       annotations: DESTRUCTIVE_REMOTE
     },
     async ({ abs_path, remote, branch, force_mode, set_upstream, tags, delete: deleteFlag, dry_run }) => {
