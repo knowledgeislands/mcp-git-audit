@@ -15,7 +15,7 @@
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
-import { loadConfig } from '../config/index.js'
+import { loadConfig, SERVER_VERSION } from '../config/index.js'
 import { registerRepoAuditTools, registerRepoCommitTools, registerRepoRemotesTools, registerRepoSyncTools } from '../tools/index.js'
 import { makeAccessGatedRegister } from '../utils/access-level.js'
 
@@ -28,7 +28,7 @@ console.error(`  MCP_GIT_AUDIT_AUDIT_LOG=${config.auditLogMode}${config.auditLog
 
 const server = new McpServer({
   name: 'mcp-git-audit',
-  version: '1.0.0'
+  version: SERVER_VERSION
 })
 server.registerTool = makeAccessGatedRegister(server, config.accessLevel, {
   mode: config.auditLogMode,

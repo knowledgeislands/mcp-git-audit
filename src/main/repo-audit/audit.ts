@@ -1,12 +1,7 @@
-import { execFile } from 'node:child_process'
-import { promisify } from 'node:util'
 import { errMessage } from '../../utils/errors.js'
-import { GIT_LOCAL_TIMEOUT_MS } from '../../utils/git-exec.js'
+import { GIT_LOCAL_TIMEOUT_MS, runGitCapture } from '../../utils/git-exec.js'
 import type { ScannedRepo, ScanResult } from './scan.js'
 
-const execFileP = promisify(execFile)
-
-const GIT_MAX_BUFFER = 4 * 1024 * 1024
 // Token unlikely to appear in commit subjects; lets us split %s/%ar/%cI safely.
 const LOG_SEP = '<<<MGA-SEP>>>'
 
@@ -47,10 +42,7 @@ export interface AuditOptions {
 }
 
 const runGit = async (repo: string, args: string[]): Promise<string> => {
-  const { stdout } = await execFileP('git', ['--no-optional-locks', '-C', repo, ...args], {
-    timeout: GIT_LOCAL_TIMEOUT_MS,
-    maxBuffer: GIT_MAX_BUFFER
-  })
+  const { stdout } = await runGitCapture(repo, args, GIT_LOCAL_TIMEOUT_MS)
   return stdout
 }
 

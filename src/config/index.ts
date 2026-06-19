@@ -53,6 +53,13 @@ const hydrateEnvFromFiles = (): void => {
  * The gate uses ACCESS_LEVEL_RANK for ordinal comparison; a tool registers when
  * its derived level ≤ the configured level.
  */
+/**
+ * Single source of truth for the server's version. Kept in lockstep with the
+ * `version` field in package.json; imported by the MCP server entry point so
+ * the literal is not duplicated across the codebase.
+ */
+export const SERVER_VERSION = '1.0.0'
+
 export type AccessLevel = 'read' | 'write' | 'destructive'
 export const ACCESS_LEVELS: readonly AccessLevel[] = ['read', 'write', 'destructive'] as const
 export const ACCESS_LEVEL_RANK: Record<AccessLevel, number> = { read: 1, write: 2, destructive: 3 }
