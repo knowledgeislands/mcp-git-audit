@@ -1,6 +1,6 @@
 {
   "name": "@knowledgeislands/mcp-git-audit",
-  "description": "MCP for branch/working-tree/upstream status across a tree of local git repositories",
+  "description": "MCP for branch, working-tree, and upstream status across local git repositories.",
   "version": "1.0.0",
   "author": "kris@kris.me.uk",
   "bin": {
