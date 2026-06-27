@@ -94,7 +94,12 @@ describe('listRemotes', () => {
 describe('setRemoteUrl', () => {
   it('previews on dry_run=true without changing the URL; before is populated, after is omitted', async () => {
     const repo = await makeRepoWithRemote('set-url-dry', 'origin', 'https://example.com/old.git')
-    const result = await setRemoteUrl(SAFE_ROOTS, repo, { remote: 'origin', url: 'https://example.com/new.git', push: false, dry_run: true })
+    const result = await setRemoteUrl(SAFE_ROOTS, repo, {
+      remote: 'origin',
+      url: 'https://example.com/new.git',
+      push: false,
+      dry_run: true
+    })
     expect(result.dry_run).toBe(true)
     expect(result.before?.fetch_url).toBe('https://example.com/old.git')
     expect(result.after).toBeUndefined()
@@ -104,24 +109,41 @@ describe('setRemoteUrl', () => {
 
   it('changes the fetch URL on dry_run=false; running twice is idempotent', async () => {
     const repo = await makeRepoWithRemote('set-url-real', 'origin', 'https://example.com/old.git')
-    const first = await setRemoteUrl(SAFE_ROOTS, repo, { remote: 'origin', url: 'https://example.com/new.git', push: false, dry_run: false })
+    const first = await setRemoteUrl(SAFE_ROOTS, repo, {
+      remote: 'origin',
+      url: 'https://example.com/new.git',
+      push: false,
+      dry_run: false
+    })
     expect(first.dry_run).toBe(false)
     expect(first.after?.fetch_url).toBe('https://example.com/new.git')
-    const second = await setRemoteUrl(SAFE_ROOTS, repo, { remote: 'origin', url: 'https://example.com/new.git', push: false, dry_run: false })
+    const second = await setRemoteUrl(SAFE_ROOTS, repo, {
+      remote: 'origin',
+      url: 'https://example.com/new.git',
+      push: false,
+      dry_run: false
+    })
     expect(second.after?.fetch_url).toBe('https://example.com/new.git')
     expect(second.before?.fetch_url).toBe('https://example.com/new.git')
   })
 
   it('changes only the push URL when push=true', async () => {
     const repo = await makeRepoWithRemote('set-url-push', 'origin', 'https://example.com/fetch.git')
-    const result = await setRemoteUrl(SAFE_ROOTS, repo, { remote: 'origin', url: 'https://example.com/push.git', push: true, dry_run: false })
+    const result = await setRemoteUrl(SAFE_ROOTS, repo, {
+      remote: 'origin',
+      url: 'https://example.com/push.git',
+      push: true,
+      dry_run: false
+    })
     expect(result.after?.fetch_url).toBe('https://example.com/fetch.git')
     expect(result.after?.push_url).toBe('https://example.com/push.git')
   })
 
   it('rejects when the remote does not exist', async () => {
     const repo = await makeRepoWithRemote('set-url-missing', 'origin', 'https://example.com/foo.git')
-    await expect(setRemoteUrl(SAFE_ROOTS, repo, { remote: 'nope', url: 'https://example.com/bar.git', push: false, dry_run: false })).rejects.toThrow(/does not exist/)
+    await expect(
+      setRemoteUrl(SAFE_ROOTS, repo, { remote: 'nope', url: 'https://example.com/bar.git', push: false, dry_run: false })
+    ).rejects.toThrow(/does not exist/)
   })
 })
 
@@ -139,7 +161,9 @@ describe('addRemote', () => {
     const repo = await makeRepoWithRemote('add-real', 'origin', 'https://example.com/origin.git')
     const result = await addRemote(SAFE_ROOTS, repo, { remote: 'fork', url: 'https://example.com/fork.git', dry_run: false })
     expect(result.after?.fetch_url).toBe('https://example.com/fork.git')
-    await expect(addRemote(SAFE_ROOTS, repo, { remote: 'fork', url: 'https://example.com/fork2.git', dry_run: false })).rejects.toThrow(/already exists/)
+    await expect(addRemote(SAFE_ROOTS, repo, { remote: 'fork', url: 'https://example.com/fork2.git', dry_run: false })).rejects.toThrow(
+      /already exists/
+    )
   })
 })
 

@@ -58,7 +58,9 @@ describe('resolveAgainstSafeRoots', () => {
 
   it('expands ~/ before checking', async () => {
     // expand ~/<something-that-cannot-exist-under-home> — should still reject cleanly
-    await expect(resolveAgainstSafeRoots('~/__mcp_git_audit_definitely_not_real__', [safeA])).rejects.toThrow(/not inside any configured safe_root/)
+    await expect(resolveAgainstSafeRoots('~/__mcp_git_audit_definitely_not_real__', [safeA])).rejects.toThrow(
+      /not inside any configured safe_root/
+    )
   })
 
   it('accepts a path that does not exist yet, as long as its nearest existing ancestor is inside a safe root', async () => {

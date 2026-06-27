@@ -26,7 +26,10 @@ describe('loadConfig', () => {
     })
 
     it('expands ~/ in each entry', () => {
-      expect(load({ MCP_GIT_AUDIT_SAFE_ROOTS: '~/foo:~/bar' }).safeRoots).toEqual([path.join(os.homedir(), 'foo'), path.join(os.homedir(), 'bar')])
+      expect(load({ MCP_GIT_AUDIT_SAFE_ROOTS: '~/foo:~/bar' }).safeRoots).toEqual([
+        path.join(os.homedir(), 'foo'),
+        path.join(os.homedir(), 'bar')
+      ])
     })
 
     it('accepts a colon-separated list of absolute paths', () => {

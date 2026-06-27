@@ -31,7 +31,13 @@ describe('branchNameSchema', () => {
 
 describe('remoteUrlSchema', () => {
   it('accepts URLs of various transports', () => {
-    for (const ok of ['https://example.com/foo.git', 'git@github.com:owner/repo.git', 'ssh://user@host/path', 'file:///tmp/bare.git', '/abs/path/bare.git']) {
+    for (const ok of [
+      'https://example.com/foo.git',
+      'git@github.com:owner/repo.git',
+      'ssh://user@host/path',
+      'file:///tmp/bare.git',
+      '/abs/path/bare.git'
+    ]) {
       expect(remoteUrlSchema.safeParse(ok).success).toBe(true)
     }
   })

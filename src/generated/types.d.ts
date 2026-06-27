@@ -3,8 +3,6 @@
 // Source: /Users/krisbrown/.mcporter/mcporter.json
 // Transport: STDIO /Users/krisbrown/.local/share/mise/installs/node/lts/bin/node /Users/krisbrown/kis/knowledgeislands/mcp-git-audit/dist/mcp-server/index.js
 
-import type { CallResult } from 'mcporter'
-
 export interface KitMcpGitAuditTools {
   /**
    * Walk a directory tree for .git directories and return repo metadata. Cheap and side-effect-free — no

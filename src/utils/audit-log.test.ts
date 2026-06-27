@@ -10,7 +10,13 @@ describe('appendAuditEvent / withAuditLog (mcp-git-audit)', () => {
 
   // The audit-log module keeps internal state (chmodEnsured, the append queue),
   // so reset modules per test for isolation. Config is passed in explicitly.
-  const auditCfg = (o: Partial<AuditConfig> = {}): AuditConfig => ({ mode: 'writes', path: logPath, maxBytes: 10 * 1024 * 1024, keep: 5, ...o })
+  const auditCfg = (o: Partial<AuditConfig> = {}): AuditConfig => ({
+    mode: 'writes',
+    path: logPath,
+    maxBytes: 10 * 1024 * 1024,
+    keep: 5,
+    ...o
+  })
 
   beforeEach(async () => {
     await fs.mkdir(tmpDir, { recursive: true })
@@ -37,7 +43,9 @@ describe('appendAuditEvent / withAuditLog (mcp-git-audit)', () => {
 
   it('logs read-level tools when mode=all', async () => {
     const { withAuditLog } = await import('./audit-log.js')
-    const wrapped = withAuditLog(auditCfg({ mode: 'all' }), 'git_repos_scan', 'read', async () => ({ content: [{ type: 'text', text: 'ok' }] }))
+    const wrapped = withAuditLog(auditCfg({ mode: 'all' }), 'git_repos_scan', 'read', async () => ({
+      content: [{ type: 'text', text: 'ok' }]
+    }))
     await wrapped({ root: '/repos' })
     await flushAsync()
     const event = JSON.parse((await fs.readFile(logPath, 'utf-8')).trim())
@@ -50,7 +58,9 @@ describe('appendAuditEvent / withAuditLog (mcp-git-audit)', () => {
 
   it('redacts URL credentials across string / array / object / primitive arg branches', async () => {
     const { withAuditLog } = await import('./audit-log.js')
-    const wrapped = withAuditLog(auditCfg({ mode: 'all' }), 'git_repos_scan', 'read', async () => ({ content: [{ type: 'text', text: 'ok' }] }))
+    const wrapped = withAuditLog(auditCfg({ mode: 'all' }), 'git_repos_scan', 'read', async () => ({
+      content: [{ type: 'text', text: 'ok' }]
+    }))
     await wrapped({
       url: 'https://user:tok3n@github.com/o/r.git',
       mirrors: ['https://user:tok3n@gitlab.com/o/r.git'],
@@ -70,7 +80,10 @@ describe('appendAuditEvent / withAuditLog (mcp-git-audit)', () => {
 
   it('records ok:false when isError:true', async () => {
     const { withAuditLog } = await import('./audit-log.js')
-    const wrapped = withAuditLog(auditCfg({ mode: 'all' }), 'git_repos_scan', 'read', async () => ({ isError: true, content: [{ type: 'text', text: 'bad root' }] }))
+    const wrapped = withAuditLog(auditCfg({ mode: 'all' }), 'git_repos_scan', 'read', async () => ({
+      isError: true,
+      content: [{ type: 'text', text: 'bad root' }]
+    }))
     await wrapped({})
     await flushAsync()
     const event = JSON.parse((await fs.readFile(logPath, 'utf-8')).trim())
@@ -128,7 +141,9 @@ describe('appendAuditEvent / withAuditLog (mcp-git-audit)', () => {
     expect(((await fs.stat(logPath)).mode & 0o777).toString(8)).toBe('644')
 
     const { withAuditLog } = await import('./audit-log.js')
-    const wrapped = withAuditLog(auditCfg({ mode: 'all' }), 'git_repos_scan', 'read', async () => ({ content: [{ type: 'text', text: 'ok' }] }))
+    const wrapped = withAuditLog(auditCfg({ mode: 'all' }), 'git_repos_scan', 'read', async () => ({
+      content: [{ type: 'text', text: 'ok' }]
+    }))
     await wrapped({})
     await flushAsync()
 
@@ -138,7 +153,9 @@ describe('appendAuditEvent / withAuditLog (mcp-git-audit)', () => {
 
   it('only chmods once per process (skips the chmod on the second append)', async () => {
     const { withAuditLog } = await import('./audit-log.js')
-    const wrapped = withAuditLog(auditCfg({ mode: 'all' }), 'git_repos_scan', 'read', async () => ({ content: [{ type: 'text', text: 'ok' }] }))
+    const wrapped = withAuditLog(auditCfg({ mode: 'all' }), 'git_repos_scan', 'read', async () => ({
+      content: [{ type: 'text', text: 'ok' }]
+    }))
     // First append sets chmodEnsured=true; the second takes the `!chmodEnsured` false branch.
     await wrapped({ n: 1 })
     await flushAsync()
@@ -151,7 +168,9 @@ describe('appendAuditEvent / withAuditLog (mcp-git-audit)', () => {
 
   it('truncates oversized argument payloads with a _truncated marker', async () => {
     const { withAuditLog } = await import('./audit-log.js')
-    const wrapped = withAuditLog(auditCfg({ mode: 'all' }), 'git_repos_scan', 'read', async () => ({ content: [{ type: 'text', text: 'ok' }] }))
+    const wrapped = withAuditLog(auditCfg({ mode: 'all' }), 'git_repos_scan', 'read', async () => ({
+      content: [{ type: 'text', text: 'ok' }]
+    }))
     await wrapped({ blob: 'x'.repeat(8000) })
     await flushAsync()
     const event = JSON.parse((await fs.readFile(logPath, 'utf-8')).trim())
@@ -168,7 +187,9 @@ describe('appendAuditEvent / withAuditLog (mcp-git-audit)', () => {
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     const { withAuditLog } = await import('./audit-log.js')
-    const wrapped = withAuditLog(auditCfg({ mode: 'all', path: badPath }), 'git_repos_scan', 'read', async () => ({ content: [{ type: 'text', text: 'ok' }] }))
+    const wrapped = withAuditLog(auditCfg({ mode: 'all', path: badPath }), 'git_repos_scan', 'read', async () => ({
+      content: [{ type: 'text', text: 'ok' }]
+    }))
     await expect(wrapped({})).resolves.toBeDefined()
     await flushAsync()
 
@@ -184,7 +205,9 @@ describe('appendAuditEvent / withAuditLog (mcp-git-audit)', () => {
     await fs.writeFile(`${logPath}.1`, 'old\n', { mode: 0o600 })
 
     const { withAuditLog } = await import('./audit-log.js')
-    const wrapped = withAuditLog(auditCfg({ mode: 'all', maxBytes: 10, keep: 2 }), 'git_repos_scan', 'read', async () => ({ content: [{ type: 'text', text: 'ok' }] }))
+    const wrapped = withAuditLog(auditCfg({ mode: 'all', maxBytes: 10, keep: 2 }), 'git_repos_scan', 'read', async () => ({
+      content: [{ type: 'text', text: 'ok' }]
+    }))
     await wrapped({})
     await new Promise((r) => setTimeout(r, 30))
 
@@ -201,7 +224,9 @@ describe('appendAuditEvent / withAuditLog (mcp-git-audit)', () => {
     await fs.writeFile(logPath, `${'b'.repeat(50)}\n`, { mode: 0o600 })
 
     const { withAuditLog } = await import('./audit-log.js')
-    const wrapped = withAuditLog(auditCfg({ mode: 'all', maxBytes: 10, keep: 0 }), 'git_repos_scan', 'read', async () => ({ content: [{ type: 'text', text: 'ok' }] }))
+    const wrapped = withAuditLog(auditCfg({ mode: 'all', maxBytes: 10, keep: 0 }), 'git_repos_scan', 'read', async () => ({
+      content: [{ type: 'text', text: 'ok' }]
+    }))
     await wrapped({})
     await new Promise((r) => setTimeout(r, 30))
 
@@ -215,7 +240,9 @@ describe('appendAuditEvent / withAuditLog (mcp-git-audit)', () => {
     await fs.writeFile(logPath, `${'c'.repeat(50)}\n`, { mode: 0o600 })
 
     const { withAuditLog } = await import('./audit-log.js')
-    const wrapped = withAuditLog(auditCfg({ mode: 'all', maxBytes: 0 }), 'git_repos_scan', 'read', async () => ({ content: [{ type: 'text', text: 'ok' }] }))
+    const wrapped = withAuditLog(auditCfg({ mode: 'all', maxBytes: 0 }), 'git_repos_scan', 'read', async () => ({
+      content: [{ type: 'text', text: 'ok' }]
+    }))
     await wrapped({})
     await new Promise((r) => setTimeout(r, 30))
 
@@ -229,7 +256,9 @@ describe('appendAuditEvent / withAuditLog (mcp-git-audit)', () => {
     // rotateIfNeeded first runs there is no oversized predecessor, exercising the
     // stat-then-return-early path without error.
     const { withAuditLog } = await import('./audit-log.js')
-    const wrapped = withAuditLog(auditCfg({ mode: 'all', maxBytes: 1048576 }), 'git_repos_scan', 'read', async () => ({ content: [{ type: 'text', text: 'ok' }] }))
+    const wrapped = withAuditLog(auditCfg({ mode: 'all', maxBytes: 1048576 }), 'git_repos_scan', 'read', async () => ({
+      content: [{ type: 'text', text: 'ok' }]
+    }))
     await wrapped({})
     await flushAsync()
     expect((await fs.readFile(logPath, 'utf-8')).trim().split('\n')).toHaveLength(1)
@@ -247,7 +276,9 @@ describe('appendAuditEvent / withAuditLog (mcp-git-audit)', () => {
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     const { withAuditLog } = await import('./audit-log.js')
-    const wrapped = withAuditLog(auditCfg({ mode: 'all', maxBytes: 10, keep: 1 }), 'git_repos_scan', 'read', async () => ({ content: [{ type: 'text', text: 'ok' }] }))
+    const wrapped = withAuditLog(auditCfg({ mode: 'all', maxBytes: 10, keep: 1 }), 'git_repos_scan', 'read', async () => ({
+      content: [{ type: 'text', text: 'ok' }]
+    }))
     await expect(wrapped({})).resolves.toBeDefined()
     await new Promise((r) => setTimeout(r, 30))
 

@@ -65,8 +65,17 @@ export const BRANCH_NAME_RE = /^(?![-./])(?!.*\.\.)(?!.*\/$)[A-Za-z0-9_][A-Za-z0
  */
 export const REMOTE_URL_RE = /^(?!-)[^\s\0\r\n]{1,2048}$/
 
-export const remoteNameSchema = z.string().regex(REMOTE_NAME_RE, 'remote name must be 1–100 chars, [A-Za-z0-9_.-], not starting with "-" or "."')
+export const remoteNameSchema = z
+  .string()
+  .regex(REMOTE_NAME_RE, 'remote name must be 1–100 chars, [A-Za-z0-9_.-], not starting with "-" or "."')
 
-export const branchNameSchema = z.string().regex(BRANCH_NAME_RE, 'branch name must be a valid git ref segment ([A-Za-z0-9_./-], no leading "-/.", no ".." sequence, no trailing "/")')
+export const branchNameSchema = z
+  .string()
+  .regex(
+    BRANCH_NAME_RE,
+    'branch name must be a valid git ref segment ([A-Za-z0-9_./-], no leading "-/.", no ".." sequence, no trailing "/")'
+  )
 
-export const remoteUrlSchema = z.string().regex(REMOTE_URL_RE, 'url must be 1–2048 chars and must not start with "-" or contain whitespace/control chars')
+export const remoteUrlSchema = z
+  .string()
+  .regex(REMOTE_URL_RE, 'url must be 1–2048 chars and must not start with "-" or contain whitespace/control chars')

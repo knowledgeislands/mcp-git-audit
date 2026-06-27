@@ -130,7 +130,11 @@ export interface RemoveRemoteOptions {
  * remote-tracking refs (`refs/remotes/<name>/*`). Working-tree files are
  * untouched. Idempotent end state: gone is gone.
  */
-export const removeRemote = async (safeRoots: readonly string[], absPath: string, opts: RemoveRemoteOptions): Promise<MutateRemoteResult> => {
+export const removeRemote = async (
+  safeRoots: readonly string[],
+  absPath: string,
+  opts: RemoveRemoteOptions
+): Promise<MutateRemoteResult> => {
   const resolved = await resolveAgainstSafeRoots(absPath, safeRoots)
   const before = findRemote(await readRemotes(resolved), opts.remote)
   if (!before) {

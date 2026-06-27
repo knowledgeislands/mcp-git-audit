@@ -150,7 +150,12 @@ export const repoDetail = async (safeRoots: readonly string[], absPath: string, 
   const relPath = path.relative(containingRoot, resolved).split(path.sep).join('/')
 
   const requested = Math.min(Math.max(1, Math.trunc(opts.commits)), MAX_COMMITS)
-  const logArgs = ['log', `-n${requested}`, `--pretty=format:${COMMIT_SEP}%h${FIELD_SEP}%s${FIELD_SEP}%an${FIELD_SEP}%cI${FIELD_SEP}%ar`, '--numstat']
+  const logArgs = [
+    'log',
+    `-n${requested}`,
+    `--pretty=format:${COMMIT_SEP}%h${FIELD_SEP}%s${FIELD_SEP}%an${FIELD_SEP}%cI${FIELD_SEP}%ar`,
+    '--numstat'
+  ]
 
   let commits: CommitDetail[] = []
   let error: string | undefined

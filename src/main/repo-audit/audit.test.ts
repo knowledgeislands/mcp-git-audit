@@ -88,7 +88,24 @@ describe('auditRepo', () => {
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(Object.keys(result.status).sort()).toEqual(
-      ['abs_path', 'ahead', 'behind', 'branch', 'detached', 'group', 'has_remote', 'has_upstream', 'iso_date', 'modified', 'name', 'path', 'rel_date', 'sha', 'subject', 'untracked'].sort()
+      [
+        'abs_path',
+        'ahead',
+        'behind',
+        'branch',
+        'detached',
+        'group',
+        'has_remote',
+        'has_upstream',
+        'iso_date',
+        'modified',
+        'name',
+        'path',
+        'rel_date',
+        'sha',
+        'subject',
+        'untracked'
+      ].sort()
     )
     expect(result.status.path).toBe('alpha/clean')
     expect(result.status.abs_path).toBe(path.join(tmpRoot, 'alpha/clean'))

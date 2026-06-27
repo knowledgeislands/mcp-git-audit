@@ -9,7 +9,9 @@ import { errorResult, jsonResult } from '../../utils/results.js'
 const absPathSchema = z
   .string()
   .min(1)
-  .describe('Absolute path to a git repo, taken from a prior `git_repos_scan`/`git_repos_audit` result. Revalidated against MCP_GIT_AUDIT_SAFE_ROOTS before any `git` call.')
+  .describe(
+    'Absolute path to a git repo, taken from a prior `git_repos_scan`/`git_repos_audit` result. Revalidated against MCP_GIT_AUDIT_SAFE_ROOTS before any `git` call.'
+  )
 
 const fetchInput = z
   .object({
@@ -27,10 +29,26 @@ const pullInput = z
     abs_path: absPathSchema,
     remote: remoteNameSchema.default('origin').describe('Remote to pull from.'),
     branch: branchNameSchema.optional().describe("Branch to pull. Defaults to the repo's current branch. Required when HEAD is detached."),
-    rebase: z.boolean().default(false).describe('Pass `--rebase` to rebase local commits onto the upstream instead of merging. Rewrites history — opt in explicitly.'),
-    ff_only: z.boolean().default(true).describe('Pass `--ff-only` (default true). Aborts with a clear error when the upstream has diverged, instead of producing a merge commit.'),
-    autostash: z.boolean().default(false).describe('Pass `--autostash` to stash uncommitted changes for the duration of the pull and re-apply afterwards.'),
-    dry_run: z.boolean().default(true).describe('When true (default), the call runs `git fetch --dry-run` against the same remote/branch instead of pulling — git pull has no native dry-run.')
+    rebase: z
+      .boolean()
+      .default(false)
+      .describe('Pass `--rebase` to rebase local commits onto the upstream instead of merging. Rewrites history — opt in explicitly.'),
+    ff_only: z
+      .boolean()
+      .default(true)
+      .describe(
+        'Pass `--ff-only` (default true). Aborts with a clear error when the upstream has diverged, instead of producing a merge commit.'
+      ),
+    autostash: z
+      .boolean()
+      .default(false)
+      .describe('Pass `--autostash` to stash uncommitted changes for the duration of the pull and re-apply afterwards.'),
+    dry_run: z
+      .boolean()
+      .default(true)
+      .describe(
+        'When true (default), the call runs `git fetch --dry-run` against the same remote/branch instead of pulling — git pull has no native dry-run.'
+      )
   })
   .strict()
 
@@ -42,8 +60,13 @@ const pushInput = z
     force_mode: z
       .enum(['none', 'with_lease', 'force'])
       .default('none')
-      .describe('`none` (default): no force flag. `with_lease`: `--force-with-lease` (safer). `force`: `--force` (overwrites remote unconditionally — destructive).'),
-    set_upstream: z.boolean().default(false).describe('Pass `--set-upstream` to record the remote/branch as the upstream for future pulls.'),
+      .describe(
+        '`none` (default): no force flag. `with_lease`: `--force-with-lease` (safer). `force`: `--force` (overwrites remote unconditionally — destructive).'
+      ),
+    set_upstream: z
+      .boolean()
+      .default(false)
+      .describe('Pass `--set-upstream` to record the remote/branch as the upstream for future pulls.'),
     tags: z.boolean().default(false).describe('Pass `--tags` to push all tags reachable from the pushed refs.'),
     delete: z.boolean().default(false).describe('Pass `--delete` to delete the branch on the remote. Destructive.'),
     dry_run: z.boolean().default(true).describe('Pass `--dry-run` to git itself — negotiates with the remote but does not update any refs.')
@@ -184,7 +207,9 @@ Returns:
     },
     async ({ abs_path, remote, branch, force_mode, set_upstream, tags, delete: deleteFlag, dry_run }) => {
       try {
-        return jsonResult(await pushRepo(cfg.safeRoots, abs_path, { remote, branch, force_mode, set_upstream, tags, delete: deleteFlag, dry_run }))
+        return jsonResult(
+          await pushRepo(cfg.safeRoots, abs_path, { remote, branch, force_mode, set_upstream, tags, delete: deleteFlag, dry_run })
+        )
       } catch (err) {
         return errorResult('pushing', err)
       }

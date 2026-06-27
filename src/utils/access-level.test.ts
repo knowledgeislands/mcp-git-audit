@@ -38,7 +38,11 @@ describe('levelFromAnnotations / makeAccessGatedRegister (mcp-git-audit)', () =>
     const { calls, gated } = gateAt('read')
     gated('git_repos_scan', { title: 't', description: 'd', annotations: READ_ONLY } as never, (async () => ({ content: [] })) as never)
     gated('hypothetical_writer', { title: 't', description: 'd', annotations: WRITE } as never, (async () => ({ content: [] })) as never)
-    gated('hypothetical_destructive', { title: 't', description: 'd', annotations: DESTRUCTIVE } as never, (async () => ({ content: [] })) as never)
+    gated(
+      'hypothetical_destructive',
+      { title: 't', description: 'd', annotations: DESTRUCTIVE } as never,
+      (async () => ({ content: [] })) as never
+    )
     expect(calls).toEqual(['git_repos_scan'])
   })
 
@@ -46,7 +50,11 @@ describe('levelFromAnnotations / makeAccessGatedRegister (mcp-git-audit)', () =>
     const { calls, gated } = gateAt('write')
     gated('git_repos_scan', { title: 't', description: 'd', annotations: READ_ONLY } as never, (async () => ({ content: [] })) as never)
     gated('hypothetical_writer', { title: 't', description: 'd', annotations: WRITE } as never, (async () => ({ content: [] })) as never)
-    gated('hypothetical_destructive', { title: 't', description: 'd', annotations: DESTRUCTIVE } as never, (async () => ({ content: [] })) as never)
+    gated(
+      'hypothetical_destructive',
+      { title: 't', description: 'd', annotations: DESTRUCTIVE } as never,
+      (async () => ({ content: [] })) as never
+    )
     expect(calls).toEqual(['git_repos_scan', 'hypothetical_writer'])
   })
 
@@ -54,7 +62,11 @@ describe('levelFromAnnotations / makeAccessGatedRegister (mcp-git-audit)', () =>
     const { calls, gated } = gateAt('destructive')
     gated('git_repos_scan', { title: 't', description: 'd', annotations: READ_ONLY } as never, (async () => ({ content: [] })) as never)
     gated('hypothetical_writer', { title: 't', description: 'd', annotations: WRITE } as never, (async () => ({ content: [] })) as never)
-    gated('hypothetical_destructive', { title: 't', description: 'd', annotations: DESTRUCTIVE } as never, (async () => ({ content: [] })) as never)
+    gated(
+      'hypothetical_destructive',
+      { title: 't', description: 'd', annotations: DESTRUCTIVE } as never,
+      (async () => ({ content: [] })) as never
+    )
     expect(calls).toEqual(['git_repos_scan', 'hypothetical_writer', 'hypothetical_destructive'])
   })
 

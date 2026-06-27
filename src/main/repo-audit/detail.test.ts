@@ -157,11 +157,15 @@ describe('repoDetail', () => {
   })
 
   it('rejects abs_path outside MCP_GIT_AUDIT_SAFE_ROOTS', async () => {
-    await expect(repoDetail(SAFE_ROOTS, '/etc', { commits: 1, include_diffstat: false })).rejects.toThrow(/not inside any configured safe_root/)
+    await expect(repoDetail(SAFE_ROOTS, '/etc', { commits: 1, include_diffstat: false })).rejects.toThrow(
+      /not inside any configured safe_root/
+    )
   })
 
   it('rejects path-traversal-style escapes via ..', async () => {
-    await expect(repoDetail(SAFE_ROOTS, path.join(tmpRoot, 'active', '..', '..', '..', '..'), { commits: 1, include_diffstat: false })).rejects.toThrow(/not inside any configured safe_root/)
+    await expect(
+      repoDetail(SAFE_ROOTS, path.join(tmpRoot, 'active', '..', '..', '..', '..'), { commits: 1, include_diffstat: false })
+    ).rejects.toThrow(/not inside any configured safe_root/)
   })
 
   it('completes a typical 10-commit no-diffstat call well under 1s', async () => {

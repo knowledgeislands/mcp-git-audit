@@ -24,7 +24,10 @@ export const resolveAgainstSafeRoots = async (input: string, safeRoots: readonly
  * compute a path relative to its safe root (e.g. `repo_detail`) use this to
  * avoid duplicating the realpath work.
  */
-export const resolveAndLocateAgainstSafeRoots = async (input: string, safeRoots: readonly string[]): Promise<{ resolved: string; containingRoot: string }> => {
+export const resolveAndLocateAgainstSafeRoots = async (
+  input: string,
+  safeRoots: readonly string[]
+): Promise<{ resolved: string; containingRoot: string }> => {
   const expanded = expandHome(input)
   if (!path.isAbsolute(expanded)) {
     throw new Error(`root must be an absolute path or start with ~/: "${input}"`)

@@ -8,6 +8,7 @@
 import * as os from 'node:os'
 import * as path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import pkg from '../../package.json' with { type: 'json' }
 
 const expandHome = (p: string): string => (p === '~' ? os.homedir() : p.startsWith('~/') ? path.join(os.homedir(), p.slice(2)) : p)
 
@@ -54,11 +55,11 @@ const hydrateEnvFromFiles = (): void => {
  * its derived level ≤ the configured level.
  */
 /**
- * Single source of truth for the server's version. Kept in lockstep with the
- * `version` field in package.json; imported by the MCP server entry point so
- * the literal is not duplicated across the codebase.
+ * Single source of truth for the server's version. Read from package.json at
+ * import time so it stays in lockstep with the published version automatically
+ * — no manual update needed when the package version bumps.
  */
-export const SERVER_VERSION = '1.0.0'
+export const SERVER_VERSION: string = pkg.version
 
 export type AccessLevel = 'read' | 'write' | 'destructive'
 export const ACCESS_LEVELS: readonly AccessLevel[] = ['read', 'write', 'destructive'] as const
@@ -141,7 +142,9 @@ export const loadConfig = (env: NodeJS.ProcessEnv = process.env): Config => {
     safeRoots: parseSafeRoots(env.MCP_GIT_AUDIT_SAFE_ROOTS),
     accessLevel: parseAccessLevel(env.MCP_GIT_AUDIT_ACCESS_LEVEL),
     auditLogMode: parseAuditLogMode(env.MCP_GIT_AUDIT_AUDIT_LOG),
-    auditLogPath: path.resolve(expandHome(env.MCP_GIT_AUDIT_AUDIT_LOG_PATH ?? path.join(os.homedir(), '.local', 'state', 'mcp-git-audit', 'audit.jsonl'))),
+    auditLogPath: path.resolve(
+      expandHome(env.MCP_GIT_AUDIT_AUDIT_LOG_PATH ?? path.join(os.homedir(), '.local', 'state', 'mcp-git-audit', 'audit.jsonl'))
+    ),
     auditLogMaxBytes: parseNonNegativeInt(env.MCP_GIT_AUDIT_AUDIT_LOG_MAX_BYTES, 10 * 1024 * 1024, 'MCP_GIT_AUDIT_AUDIT_LOG_MAX_BYTES'),
     auditLogKeep: parseNonNegativeInt(env.MCP_GIT_AUDIT_AUDIT_LOG_KEEP, 5, 'MCP_GIT_AUDIT_AUDIT_LOG_KEEP')
   }
