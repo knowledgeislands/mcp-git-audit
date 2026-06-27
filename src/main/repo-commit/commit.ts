@@ -19,7 +19,7 @@ export interface CommitResult {
   stage: CommitStage
   staged_paths: string[]
   message: string
-  command: string[]
+  command: string
   sha: string | null
   stdout: string
   stderr: string
@@ -141,7 +141,7 @@ export const commitRepo = async (safeRoots: readonly string[], absPath: string, 
     stage: opts.stage,
     staged_paths,
     message: opts.message,
-    command: ['git', ...commitArgs],
+    command: ['git', ...commitArgs].join(' '),
     sha,
     stdout,
     /* v8 ignore next -- `git add` is silent on success; the non-empty stageStderr branch is defence in depth for future warning lines. */

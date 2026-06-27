@@ -1,7 +1,7 @@
-// Generated on 2026-06-24T14:59:09.860Z by @knowledgeislands/mcp-git-audit@1.0.0
+// Generated on 2026-06-27T20:37:54.830Z by @knowledgeislands/mcp-git-audit@1.0.0
 // Server: kit-mcp-git-audit
 // Source: /Users/krisbrown/.mcporter/mcporter.json
-// Transport: STDIO node /Users/krisbrown/kis/knowledgeislands/mcp-git-audit/dist/mcp-server/index.js
+// Transport: STDIO /Users/krisbrown/.local/share/mise/installs/node/lts/bin/node /Users/krisbrown/kis/knowledgeislands/mcp-git-audit/dist/mcp-server/index.js
 
 import type { CallResult } from 'mcporter'
 
@@ -25,7 +25,7 @@ export interface KitMcpGitAuditTools {
    *              Omit when exactly one safe root is configured.
    * @param max_depth? Maximum depth (from `root`) at which a repo directory may live. Default 2.
    */
-  git_repos_scan(root?: string, max_depth?: number): Promise<CallResult>
+  git_repos_scan(root?: string, max_depth?: number): Promise<object>
 
   /**
    * Run per-repo `git` checks (branch, working-tree status, ahead/behind, last commit) over a scan
@@ -49,7 +49,7 @@ export interface KitMcpGitAuditTools {
    *             MCP_GIT_AUDIT_SAFE_ROOTS before any `git` call is made.
    * @param include_stale_days? Reserved — currently unused; the consumer computes stale itself.
    */
-  git_repos_audit(scan: Record<string, unknown>, include_stale_days?: number): Promise<CallResult>
+  git_repos_audit(scan: Record<string, unknown>, include_stale_days?: number): Promise<object>
 
   /**
    * Return commit history and working-tree status for a single repo identified by an absolute path from
@@ -77,7 +77,7 @@ export interface KitMcpGitAuditTools {
    * @param include_diffstat? When true, include per-commit `diffstat[]` (added/removed/path) from `git
    *                          log --numstat`. Slightly slower; `files` count is always returned.
    */
-  git_repo_detail(abs_path: string, commits?: number, include_diffstat?: boolean): Promise<CallResult>
+  git_repo_detail(abs_path: string, commits?: number, include_diffstat?: boolean): Promise<object>
 
   /**
    * Run `git fetch`. Updates remote-tracking refs and FETCH_HEAD but does NOT modify the working tree or
@@ -104,7 +104,7 @@ export interface KitMcpGitAuditTools {
    * @param dry_run? Pass `--dry-run` to git itself — connects to the remote but does not update local
    *                 refs.
    */
-  git_repo_fetch(abs_path: string, remote?: string, prune?: boolean, tags?: boolean, all_remotes?: boolean): Promise<CallResult>
+  git_repo_fetch(abs_path: string, remote?: string, prune?: boolean, tags?: boolean, all_remotes?: boolean): Promise<object>
   // optional (1): dry_run
 
   /**
@@ -141,7 +141,7 @@ export interface KitMcpGitAuditTools {
    * @param dry_run? When true (default), the call runs `git fetch --dry-run` against the same
    *                 remote/branch instead of pulling — git pull has no native dry-run.
    */
-  git_repo_pull(abs_path: string, remote?: string, branch?: string, rebase?: boolean, ff_only?: boolean): Promise<CallResult>
+  git_repo_pull(abs_path: string, remote?: string, branch?: string, rebase?: boolean, ff_only?: boolean): Promise<object>
   // optional (2): autostash, dry_run
 
   /**
@@ -179,7 +179,13 @@ export interface KitMcpGitAuditTools {
    * @param dry_run? Pass `--dry-run` to git itself — negotiates with the remote but does not update any
    *                 refs.
    */
-  git_repo_push(abs_path: string, remote?: string, branch?: string, force_mode?: 'none' | 'with_lease' | 'force', set_upstream?: boolean): Promise<CallResult>
+  git_repo_push(
+    abs_path: string,
+    remote?: string,
+    branch?: string,
+    force_mode?: 'none' | 'with_lease' | 'force',
+    set_upstream?: boolean
+  ): Promise<object>
   // optional (3): tags, delete, dry_run
 
   /**
@@ -196,7 +202,7 @@ export interface KitMcpGitAuditTools {
    * @param abs_path Absolute path to a git repo, taken from a prior `git_repos_scan`/`git_repos_audit`
    *                 result. Revalidated against MCP_GIT_AUDIT_SAFE_ROOTS before any `git` call.
    */
-  git_repo_remotes_list(abs_path: string): Promise<CallResult>
+  git_repo_remotes_list(abs_path: string): Promise<object>
 
   /**
    * Update the fetch or push URL of an existing remote. Idempotent: running twice with the same args
@@ -226,7 +232,7 @@ export interface KitMcpGitAuditTools {
    * @param dry_run? When true (default), no git mutation is performed; the call returns the current
    *                 remote entry as `before`.
    */
-  git_repo_remote_set_url(abs_path: string, remote: string, url: string, push?: boolean, dry_run?: boolean): Promise<CallResult>
+  git_repo_remote_set_url(abs_path: string, remote: string, url: string, push?: boolean, dry_run?: boolean): Promise<object>
 
   /**
    * Create a new remote with the given name and URL. Non-idempotent: a second call with the same remote
@@ -250,7 +256,7 @@ export interface KitMcpGitAuditTools {
    *            are left to git.
    * @param dry_run? When true (default), no git mutation is performed.
    */
-  git_repo_remote_add(abs_path: string, remote: string, url: string, dry_run?: boolean): Promise<CallResult>
+  git_repo_remote_add(abs_path: string, remote: string, url: string, dry_run?: boolean): Promise<object>
 
   /**
    * Drop a remote's config and any `refs/remotes/<name>/*` tracking refs. Working-tree files are
@@ -270,7 +276,7 @@ export interface KitMcpGitAuditTools {
    * @param dry_run? When true (default), no git mutation is performed; the call returns the current
    *                 remote entry as `before`.
    */
-  git_repo_remote_remove(abs_path: string, remote: string, dry_run?: boolean): Promise<CallResult>
+  git_repo_remote_remove(abs_path: string, remote: string, dry_run?: boolean): Promise<object>
 
   /**
    * Return structured diff data for the working tree or the index. Read-only — no network, no mutation.
@@ -300,7 +306,7 @@ export interface KitMcpGitAuditTools {
    *                   remaining budget, its `diff` is set to null and the file's `truncated` flag is
    *                   true. Max 2000.
    */
-  git_repo_diff(abs_path: string, staged?: boolean, paths?: string[], max_lines?: number): Promise<CallResult>
+  git_repo_diff(abs_path: string, staged?: boolean, paths?: string[], max_lines?: number): Promise<object>
 
   /**
    * Stage a set of files and create a commit. Destructive — writes a commit object and moves HEAD when
@@ -340,6 +346,12 @@ export interface KitMcpGitAuditTools {
    *                 index is local, fully reversible state and the preview needs to reflect it.
    * @param allow_empty? Pass `--allow-empty`. Default false — empty commits are almost always a mistake.
    */
-  git_repo_commit(abs_path: string, message: string, stage?: 'all_tracked' | 'all' | 'paths' | 'none', paths?: string[], dry_run?: boolean): Promise<CallResult>
+  git_repo_commit(
+    abs_path: string,
+    message: string,
+    stage?: 'all_tracked' | 'all' | 'paths' | 'none',
+    paths?: string[],
+    dry_run?: boolean
+  ): Promise<object>
   // optional (1): allow_empty
 }

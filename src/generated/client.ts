@@ -1,8 +1,8 @@
 // @ts-nocheck
-// Generated on 2026-06-24T14:59:09.860Z by @knowledgeislands/mcp-git-audit@1.0.0
+// Generated on 2026-06-27T20:37:54.830Z by @knowledgeislands/mcp-git-audit@1.0.0
 // Server: kit-mcp-git-audit
 // Source: /Users/krisbrown/.mcporter/mcporter.json
-// Transport: STDIO node /Users/krisbrown/kis/knowledgeislands/mcp-git-audit/dist/mcp-server/index.js
+// Transport: STDIO /Users/krisbrown/.local/share/mise/installs/node/lts/bin/node /Users/krisbrown/kis/knowledgeislands/mcp-git-audit/dist/mcp-server/index.js
 
 import { createRuntime, createServerProxy, wrapCallResult } from 'mcporter'
 import type { KitMcpGitAuditTools } from './types.d'
