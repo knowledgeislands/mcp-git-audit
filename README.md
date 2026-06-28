@@ -95,9 +95,7 @@ The level column shows the minimum `MCP_GIT_AUDIT_ACCESS_LEVEL` at which the too
     "scan": {
       "root": "/Users/me/dev",
       "scanned_at": "2026-05-14T...",
-      "repos": [
-        /* ... */
-      ]
+      "repos": [/* ... */]
     }
   }
 }
@@ -391,16 +389,16 @@ A copyable version of this is in [`claude-config-sample.json`](./claude-config-s
 
 ```bash
 bun install                       # install deps
-bun run server:mcp:dev            # bun --watch (NODE_ENV=development)
-bun run server:mcp:inspect        # MCP Inspector against the dev server
+bun run ki:server:mcp:dev            # bun --watch (NODE_ENV=development)
+bun run ki:server:mcp:inspect        # MCP Inspector against the dev server
 bun run test                      # vitest (use `bun run`, not `bun test`)
 bun run test:coverage             # vitest + v8 coverage
-bun run lint:types                # tsc --noEmit
-bun run lint:check                # Biome lint + format check
-bun run lint:fix                  # Biome auto-fix
-bun run lint:md                   # prettier + markdownlint for *.md
+bun run ki:lint:types                # tsc --noEmit
+bun run ki:lint:check                # Biome lint + format check
+bun run ki:lint:fix                  # Biome auto-fix
+bun run ki:lint:md                   # prettier + markdownlint for *.md
 bun run build                     # emit dist/
-bun run server:mcp:start          # build + run from dist/ under node
+bun run ki:server:mcp:start          # build + run from dist/ under node
 ```
 
 ## License
