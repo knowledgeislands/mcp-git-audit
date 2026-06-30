@@ -38,6 +38,11 @@ const makeRepoWithUpstream = async (name: string): Promise<{ repo: string; bare:
   const bare = await makeBareUpstream(`${name}-upstream`)
   await fs.mkdir(repo, { recursive: true })
   await git(repo, 'init', '-q', '-b', 'main')
+  // Set repo-local identity so production git operations (e.g. pullRepo's rebase,
+  // which spawns git without the test helper's identity env vars) have a committer
+  // in CI, where no global git identity exists.
+  await git(repo, 'config', 'user.name', 'test')
+  await git(repo, 'config', 'user.email', 'test@example.com')
   await fs.writeFile(path.join(repo, 'README.md'), '# initial\n', 'utf-8')
   await git(repo, 'add', '.')
   await git(repo, 'commit', '-q', '-m', 'initial')
