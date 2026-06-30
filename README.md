@@ -1,40 +1,25 @@
 # mcp-git-audit
 
-[![CI](https://github.com/knowledgeislands/mcp-git-audit/actions/workflows/ci.yml/badge.svg)](https://github.com/knowledgeislands/mcp-git-audit/actions/workflows/ci.yml)
-[![npm version](https://img.shields.io/npm/v/@knowledgeislands/mcp-git-audit.svg)](https://www.npmjs.com/package/@knowledgeislands/mcp-git-audit)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![CI](https://github.com/knowledgeislands/mcp-git-audit/actions/workflows/ci.yml/badge.svg)](https://github.com/knowledgeislands/mcp-git-audit/actions/workflows/ci.yml) [![npm version](https://img.shields.io/npm/v/@knowledgeislands/mcp-git-audit.svg)](https://www.npmjs.com/package/@knowledgeislands/mcp-git-audit) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-An MCP (Model Context Protocol) server that walks a tree of git repositories and returns branch, working-tree status, ahead/behind, and
-last-commit metadata for each — and (opt-in at deploy time) can run remote/branch mutations (`fetch`, `pull`, `push`,
-`remote add/set-url/remove`). Every walked path is validated against a configurable allow-list of safe roots, so the server cannot reach
-into directories outside that allow-list — even if asked to.
+An MCP (Model Context Protocol) server that walks a tree of git repositories and returns branch, working-tree status, ahead/behind, and last-commit metadata for each — and (opt-in at deploy time) can run remote/branch mutations (`fetch`, `pull`, `push`, `remote add/set-url/remove`). Every walked path is validated against a configurable allow-list of safe roots, so the server cannot reach into directories outside that allow-list — even if asked to.
 
-The read-only audit work is split across two tools — `git_repos_scan` (cheap filesystem walk) and `git_repos_audit` (per-repo `git` checks)
-— so a single scan can be cached and re-audited many times without paying the walk cost again.
+The read-only audit work is split across two tools — `git_repos_scan` (cheap filesystem walk) and `git_repos_audit` (per-repo `git` checks) — so a single scan can be cached and re-audited many times without paying the walk cost again.
 
 ## Features
 
-- **Read-only by default** — every tool ships with MCP tool annotations driving an access-level gate (`MCP_GIT_AUDIT_ACCESS_LEVEL`). The
-  mutating tools are hidden until the operator opts in.
-- **Split scan/audit pipeline** — `git_repos_scan` does only the filesystem walk; `git_repos_audit` consumes a scan result and runs the
-  `git` calls. Cache the scan output and re-audit on demand.
-- **Path safety in two layers** — `~` expansion plus realpath normalisation, applied to every safe root, every `root` argument, and every
-  `abs_path` re-supplied to `audit` / remote ops / sync ops. A cached scan cannot widen the security boundary.
-- **Tight identifier validation** — remote names, branch names, and remote URLs go through regex schemas that reject `-` prefixes
-  (option-injection guard), `..` sequences, and control characters.
-- **`dry_run` defaults to `true` on every mutating tool.** Where git supports `--dry-run` natively (`fetch`, `push`) we pass it through; for
-  `pull` we approximate via `git fetch --dry-run`.
-- **`force_mode` enum, not a boolean** — `git_repo_push` exposes `force_mode: 'none' | 'with_lease' | 'force'`, so the caller can't
-  accidentally non-FF-push by flipping a checkbox.
-- **Per-call timeouts** — local `git` calls are bounded at 8s; network ops (`fetch`, `pull`, `push`) at 60s. Interactive credential prompts
-  are disabled (`GIT_TERMINAL_PROMPT=0`) so an auth-required remote fails fast instead of hanging.
-- **Error isolation** — per-repo failures (e.g. a corrupt `.git/HEAD`) are aggregated into the result's `errors[]` rather than failing the
-  whole call.
+- **Read-only by default** — every tool ships with MCP tool annotations driving an access-level gate (`MCP_GIT_AUDIT_ACCESS_LEVEL`). The mutating tools are hidden until the operator opts in.
+- **Split scan/audit pipeline** — `git_repos_scan` does only the filesystem walk; `git_repos_audit` consumes a scan result and runs the `git` calls. Cache the scan output and re-audit on demand.
+- **Path safety in two layers** — `~` expansion plus realpath normalisation, applied to every safe root, every `root` argument, and every `abs_path` re-supplied to `audit` / remote ops / sync ops. A cached scan cannot widen the security boundary.
+- **Tight identifier validation** — remote names, branch names, and remote URLs go through regex schemas that reject `-` prefixes (option-injection guard), `..` sequences, and control characters.
+- **`dry_run` defaults to `true` on every mutating tool.** Where git supports `--dry-run` natively (`fetch`, `push`) we pass it through; for `pull` we approximate via `git fetch --dry-run`.
+- **`force_mode` enum, not a boolean** — `git_repo_push` exposes `force_mode: 'none' | 'with_lease' | 'force'`, so the caller can't accidentally non-FF-push by flipping a checkbox.
+- **Per-call timeouts** — local `git` calls are bounded at 8s; network ops (`fetch`, `pull`, `push`) at 60s. Interactive credential prompts are disabled (`GIT_TERMINAL_PROMPT=0`) so an auth-required remote fails fast instead of hanging.
+- **Error isolation** — per-repo failures (e.g. a corrupt `.git/HEAD`) are aggregated into the result's `errors[]` rather than failing the whole call.
 
 ## Available Tools
 
-The level column shows the minimum `MCP_GIT_AUDIT_ACCESS_LEVEL` at which the tool registers. The default level is `read`, so the `write` and
-`destructive` tools are hidden unless the operator opts in.
+The level column shows the minimum `MCP_GIT_AUDIT_ACCESS_LEVEL` at which the tool registers. The default level is `read`, so the `write` and `destructive` tools are hidden unless the operator opts in.
 
 | Tool                      | Level       | Description†                                                       |
 | ------------------------- | ----------- | ------------------------------------------------------------------ |
@@ -138,8 +123,7 @@ The level column shows the minimum `MCP_GIT_AUDIT_ACCESS_LEVEL` at which the too
 
 Errors:
 
-- `root "<X>" is not inside any configured safe_root (...)` — the supplied `root` (or any `abs_path` in `scan.repos`) escapes every entry in
-  `MCP_GIT_AUDIT_SAFE_ROOTS`.
+- `root "<X>" is not inside any configured safe_root (...)` — the supplied `root` (or any `abs_path` in `scan.repos`) escapes every entry in `MCP_GIT_AUDIT_SAFE_ROOTS`.
 - `root must be an absolute path or start with ~/: "<X>"` — relative paths are rejected.
 - `root is required when multiple safe_roots are configured (...)` — only omittable when exactly one safe root is configured.
 
@@ -188,18 +172,13 @@ Errors:
 }
 ```
 
-Timeout and per-call errors surface in the `error` field rather than throwing, so the artifact can degrade gracefully. A repo with no
-commits returns `commits: []` without an error.
+Timeout and per-call errors surface in the `error` field rather than throwing, so the artifact can degrade gracefully. A repo with no commits returns `commits: []` without an error.
 
 ### `git_repo_diff`
 
-Read-only structured diff. Returns one entry per changed file, each with `status` (M/A/D/R…), `additions`, `deletions`, and the unified
-patch body. Internally runs three `git diff` invocations (`--numstat -z`, `--name-status -z`, and unified patch) and merges the results by
-path — `paths` are then passed through unchanged in numstat order so callers can pair entries directly.
+Read-only structured diff. Returns one entry per changed file, each with `status` (M/A/D/R…), `additions`, `deletions`, and the unified patch body. Internally runs three `git diff` invocations (`--numstat -z`, `--name-status -z`, and unified patch) and merges the results by path — `paths` are then passed through unchanged in numstat order so callers can pair entries directly.
 
-`max_lines` is a budget across all files. Once a file's diff would push the running total over the cap, that file's `diff` becomes `null`
-and its `truncated` flag is set; subsequent files are likewise null+truncated. The top-level `truncated` is the disjunction over file
-entries.
+`max_lines` is a budget across all files. Once a file's diff would push the running total over the cap, that file's `diff` becomes `null` and its `truncated` flag is set; subsequent files are likewise null+truncated. The top-level `truncated` is the disjunction over file entries.
 
 | Name        | Type     | Default | Notes                                                                                        |
 | ----------- | -------- | ------- | -------------------------------------------------------------------------------------------- |
@@ -231,8 +210,7 @@ Output:
 
 ### `git_repo_remotes_list`
 
-Read-only listing of remotes. Input: `{ abs_path }`. Output: `{ abs_path, fetched_at, remotes: [{ name, fetch_url, push_url }] }`.
-`push_url` differs from `fetch_url` only when a push override was configured via `set-url --push`.
+Read-only listing of remotes. Input: `{ abs_path }`. Output: `{ abs_path, fetched_at, remotes: [{ name, fetch_url, push_url }] }`. `push_url` differs from `fetch_url` only when a push override was configured via `set-url --push`.
 
 ### `git_repo_fetch`
 
@@ -251,16 +229,11 @@ Output includes the executed argv (`command`), `stdout`, and `stderr` (git write
 
 ### `git_repo_commit`
 
-Stage a set of files and create a commit in one call. Destructive — writes a commit object and moves HEAD when `dry_run=false`. Requires
-`MCP_GIT_AUDIT_ACCESS_LEVEL=destructive`. Designed to back a commit-artifact UX where the preview step calls `git_repo_diff` +
-`git_repo_commit` (`dry_run=true`) and the confirm step re-calls with `dry_run=false`.
+Stage a set of files and create a commit in one call. Destructive — writes a commit object and moves HEAD when `dry_run=false`. Requires `MCP_GIT_AUDIT_ACCESS_LEVEL=destructive`. Designed to back a commit-artifact UX where the preview step calls `git_repo_diff` + `git_repo_commit` (`dry_run=true`) and the confirm step re-calls with `dry_run=false`.
 
-`dry_run=true` (the default) runs the staging step normally but invokes `git commit --dry-run` — git prints what would be committed without
-writing an object or moving HEAD. The index mutation done by the staging step is local-only state and is fully reversible with `git reset`;
-treating it as part of the preview is intentional, because the artifact preview needs to reflect the post-stage state.
+`dry_run=true` (the default) runs the staging step normally but invokes `git commit --dry-run` — git prints what would be committed without writing an object or moving HEAD. The index mutation done by the staging step is local-only state and is fully reversible with `git reset`; treating it as part of the preview is intentional, because the artifact preview needs to reflect the post-stage state.
 
-No `--amend` in v1 — amending rewrites history and complicates the push flow (would need force-with-lease). Adding it later requires an
-explicit `amend: true` flag with its own warning copy.
+No `--amend` in v1 — amending rewrites history and complicates the push flow (would need force-with-lease). Adding it later requires an explicit `amend: true` flag with its own warning copy.
 
 | Name          | Type                                                | Default         | Notes                                                                                                                                                  |
 | ------------- | --------------------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -290,8 +263,7 @@ Output:
 
 ### `git_repo_pull`
 
-Update the working tree from a remote. Destructive — requires `MCP_GIT_AUDIT_ACCESS_LEVEL=destructive`. Defaults `ff_only=true` so a
-divergent upstream aborts cleanly; `rebase=true` opts in to rewriting local commits. `ff_only` and `rebase` are mutually exclusive.
+Update the working tree from a remote. Destructive — requires `MCP_GIT_AUDIT_ACCESS_LEVEL=destructive`. Defaults `ff_only=true` so a divergent upstream aborts cleanly; `rebase=true` opts in to rewriting local commits. `ff_only` and `rebase` are mutually exclusive.
 
 | Name        | Type    | Default  | Notes                                                                                                 |
 | ----------- | ------- | -------- | ----------------------------------------------------------------------------------------------------- |
@@ -305,8 +277,7 @@ divergent upstream aborts cleanly; `rebase=true` opts in to rewriting local comm
 
 ### `git_repo_push`
 
-Update remote refs. Destructive — requires `MCP_GIT_AUDIT_ACCESS_LEVEL=destructive`. `--force` is gated behind `force_mode`, not a boolean,
-to make accidental non-FF pushes harder.
+Update remote refs. Destructive — requires `MCP_GIT_AUDIT_ACCESS_LEVEL=destructive`. `--force` is gated behind `force_mode`, not a boolean, to make accidental non-FF pushes harder.
 
 | Name           | Type                                    | Default  | Notes                                                          |
 | -------------- | --------------------------------------- | -------- | -------------------------------------------------------------- |
@@ -363,9 +334,7 @@ Drop a remote. Requires `MCP_GIT_AUDIT_ACCESS_LEVEL=destructive`. Working-tree f
 | `MCP_GIT_AUDIT_AUDIT_LOG_MAX_BYTES` | no       | Size-based rotation threshold in bytes. Default `10485760` (10 MiB). Set to `0` to disable rotation.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `MCP_GIT_AUDIT_AUDIT_LOG_KEEP`      | no       | Number of rotated audit-log files to retain. Default `5`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 
-Any `root` argument (and every `abs_path` re-supplied to `git_repos_audit`) must equal or live inside one of the safe roots after `~`
-expansion and `realpath`-style normalisation; otherwise the call returns an error. When only one safe root is configured, `root` may be
-omitted on the `git_repos_scan` call.
+Any `root` argument (and every `abs_path` re-supplied to `git_repos_audit`) must equal or live inside one of the safe roots after `~` expansion and `realpath`-style normalisation; otherwise the call returns an error. When only one safe root is configured, `root` may be omitted on the `git_repos_scan` call.
 
 ## Claude Desktop config
 
