@@ -51,10 +51,10 @@ The level column shows the minimum `MCP_GIT_AUDIT_ACCESS_LEVEL` at which the too
 
 #### Input
 
-| Name        | Type   | Default | Notes                                                                                                                                                |
-| ----------- | ------ | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `root`      | string | —       | Optional when exactly one entry is configured in `MCP_GIT_AUDIT_SAFE_ROOTS`. Otherwise required, and must equal or live inside one of those entries. |
-| `max_depth` | number | 2       | Max depth (from `root`) at which a repo directory may live.                                                                                          |
+| Name | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `root` | string | — | Optional when exactly one entry is configured in `MCP_GIT_AUDIT_SAFE_ROOTS`. Otherwise required, and must equal or live inside one of those entries. |
+| `max_depth` | number | 2 | Max depth (from `root`) at which a repo directory may live. |
 
 #### Output
 
@@ -88,10 +88,10 @@ The level column shows the minimum `MCP_GIT_AUDIT_ACCESS_LEVEL` at which the too
 
 #### Input
 
-| Name                 | Type   | Default | Notes                                                                                                                                       |
-| -------------------- | ------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `scan`               | object | —       | A previous result from the `git_repos_scan` tool. Every `abs_path` is revalidated against `MCP_GIT_AUDIT_SAFE_ROOTS` before any `git` call. |
-| `include_stale_days` | number | 30      | Reserved — currently unused; the consumer computes stale itself.                                                                            |
+| Name | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `scan` | object | — | A previous result from the `git_repos_scan` tool. Every `abs_path` is revalidated against `MCP_GIT_AUDIT_SAFE_ROOTS` before any `git` call. |
+| `include_stale_days` | number | 30 | Reserved — currently unused; the consumer computes stale itself. |
 
 #### Output
 
@@ -142,11 +142,11 @@ Errors:
 
 #### Input
 
-| Name               | Type    | Default | Notes                                                                                                                                                            |
-| ------------------ | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `abs_path`         | string  | —       | Absolute path to a git repo, taken from a prior `git_repos_scan`/`git_repos_audit` result. Revalidated against `MCP_GIT_AUDIT_SAFE_ROOTS` before any `git` call. |
-| `commits`          | number  | 10      | Recent commits to return, newest first. Hard cap 50.                                                                                                             |
-| `include_diffstat` | boolean | false   | When true, include per-commit `diffstat[]` (added/removed/path) from `git log --numstat`. `files` count is always returned.                                      |
+| Name | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `abs_path` | string | — | Absolute path to a git repo, taken from a prior `git_repos_scan`/`git_repos_audit` result. Revalidated against `MCP_GIT_AUDIT_SAFE_ROOTS` before any `git` call. |
+| `commits` | number | 10 | Recent commits to return, newest first. Hard cap 50. |
+| `include_diffstat` | boolean | false | When true, include per-commit `diffstat[]` (added/removed/path) from `git log --numstat`. `files` count is always returned. |
 
 #### Output
 
@@ -235,14 +235,14 @@ Stage a set of files and create a commit in one call. Destructive — writes a c
 
 No `--amend` in v1 — amending rewrites history and complicates the push flow (would need force-with-lease). Adding it later requires an explicit `amend: true` flag with its own warning copy.
 
-| Name          | Type                                                | Default         | Notes                                                                                                                                                  |
-| ------------- | --------------------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `abs_path`    | string                                              | —               | Absolute path to a git repo inside `MCP_GIT_AUDIT_SAFE_ROOTS`.                                                                                         |
-| `message`     | string                                              | —               | Commit message. Single-line in v1 (no `\n` support).                                                                                                   |
-| `stage`       | `"all_tracked"` \| `"all"` \| `"paths"` \| `"none"` | `"all_tracked"` | `all_tracked` → `git add -u`. `all` → `git add -A`. `paths` → `git add -- <paths>` (requires `paths`). `none` → commit the index as-is.                |
-| `paths`       | string[]                                            | —               | Required when `stage="paths"`, rejected otherwise. Repo-relative paths. Leading `-` / `/` and `..` segments are rejected as an option-injection guard. |
-| `dry_run`     | boolean                                             | `true`          | When true, runs `git commit --dry-run` — no commit object is written and HEAD does not move. The staging step still runs.                              |
-| `allow_empty` | boolean                                             | `false`         | Pass `--allow-empty`. Off by default — an empty commit is almost always a mistake.                                                                     |
+| Name | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `abs_path` | string | — | Absolute path to a git repo inside `MCP_GIT_AUDIT_SAFE_ROOTS`. |
+| `message` | string | — | Commit message. Single-line in v1 (no `\n` support). |
+| `stage` | `"all_tracked"` \| `"all"` \| `"paths"` \| `"none"` | `"all_tracked"` | `all_tracked` → `git add -u`. `all` → `git add -A`. `paths` → `git add -- <paths>` (requires `paths`). `none` → commit the index as-is. |
+| `paths` | string[] | — | Required when `stage="paths"`, rejected otherwise. Repo-relative paths. Leading `-` / `/` and `..` segments are rejected as an option-injection guard. |
+| `dry_run` | boolean | `true` | When true, runs `git commit --dry-run` — no commit object is written and HEAD does not move. The staging step still runs. |
+| `allow_empty` | boolean | `false` | Pass `--allow-empty`. Off by default — an empty commit is almost always a mistake. |
 
 Output:
 
@@ -325,14 +325,14 @@ Drop a remote. Requires `MCP_GIT_AUDIT_ACCESS_LEVEL=destructive`. Working-tree f
 
 ## Configuration
 
-| Env var                             | Required | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| ----------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `MCP_GIT_AUDIT_SAFE_ROOTS`          | no       | Colon-separated list of absolute or `~/...` paths the tool is allowed to walk. May list several. Defaults to `~` (the user's home directory) when unset or empty.                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `MCP_GIT_AUDIT_ACCESS_LEVEL`        | no       | Maximum tool access level to register. One of: `read` (default — read-only audit + diff + remotes-list), `write` (adds `git_repo_fetch`, `git_repo_remote_add`, `git_repo_remote_set_url`), `destructive` (adds `git_repo_commit`, `git_repo_pull`, `git_repo_push`, `git_repo_remote_remove`). Each tool's level is derived from its MCP annotations (`readOnlyHint` / `destructiveHint`); a tool registers when its derived level ≤ the configured level. The `dry_run: true` default on destructive tools controls _effect_; this gate controls _visibility_. Unknown values abort startup. |
-| `MCP_GIT_AUDIT_AUDIT_LOG`           | no       | Audit-log scope. One of `off`, `writes` (default — record only non-read tool calls), `all` (record every invocation).                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `MCP_GIT_AUDIT_AUDIT_LOG_PATH`      | no       | Path to the JSONL audit log. Default `~/.local/state/mcp-git-audit/audit.jsonl`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| `MCP_GIT_AUDIT_AUDIT_LOG_MAX_BYTES` | no       | Size-based rotation threshold in bytes. Default `10485760` (10 MiB). Set to `0` to disable rotation.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `MCP_GIT_AUDIT_AUDIT_LOG_KEEP`      | no       | Number of rotated audit-log files to retain. Default `5`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| Env var | Required | Notes |
+| --- | --- | --- |
+| `MCP_GIT_AUDIT_SAFE_ROOTS` | no | Colon-separated list of absolute or `~/...` paths the tool is allowed to walk. May list several. Defaults to `~` (the user's home directory) when unset or empty. |
+| `MCP_GIT_AUDIT_ACCESS_LEVEL` | no | Maximum tool access level to register. One of: `read` (default — read-only audit + diff + remotes-list), `write` (adds `git_repo_fetch`, `git_repo_remote_add`, `git_repo_remote_set_url`), `destructive` (adds `git_repo_commit`, `git_repo_pull`, `git_repo_push`, `git_repo_remote_remove`). Each tool's level is derived from its MCP annotations (`readOnlyHint` / `destructiveHint`); a tool registers when its derived level ≤ the configured level. The `dry_run: true` default on destructive tools controls _effect_; this gate controls _visibility_. Unknown values abort startup. |
+| `MCP_GIT_AUDIT_AUDIT_LOG` | no | Audit-log scope. One of `off`, `writes` (default — record only non-read tool calls), `all` (record every invocation). |
+| `MCP_GIT_AUDIT_AUDIT_LOG_PATH` | no | Path to the JSONL audit log. Default `~/.local/state/mcp-git-audit/audit.jsonl`. |
+| `MCP_GIT_AUDIT_AUDIT_LOG_MAX_BYTES` | no | Size-based rotation threshold in bytes. Default `10485760` (10 MiB). Set to `0` to disable rotation. |
+| `MCP_GIT_AUDIT_AUDIT_LOG_KEEP` | no | Number of rotated audit-log files to retain. Default `5`. |
 
 Any `root` argument (and every `abs_path` re-supplied to `git_repos_audit`) must equal or live inside one of the safe roots after `~` expansion and `realpath`-style normalisation; otherwise the call returns an error. When only one safe root is configured, `root` may be omitted on the `git_repos_scan` call.
 
