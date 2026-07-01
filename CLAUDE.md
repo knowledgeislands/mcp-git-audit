@@ -69,6 +69,10 @@ This server walks user-supplied filesystem trees and shells out to `git`. New to
 
 Traversal-rejection and command-injection-via-argv tests live in [src/utils/paths.test.ts](./src/utils/paths.test.ts), [src/utils/git-exec.test.ts](./src/utils/git-exec.test.ts), and the per-area `main/` tests (e.g. [src/main/repo-audit/detail.test.ts](./src/main/repo-audit/detail.test.ts), [src/main/repo-commit/commit.test.ts](./src/main/repo-commit/commit.test.ts)).
 
+## Testing
+
+Test fixtures that exercise code which itself writes a commit (a rebase or commit spawned by the code under test — `pullRepo`, `commitRepo`) must set repo-local git identity (`git config user.name` / `user.email`) on the fixture repo. The test helper's `GIT_AUTHOR_*` / `GIT_COMMITTER_*` env vars only cover the helper's own git calls; production code spawns git without them, so in CI (no global git identity) an env-var-only fixture fails with `empty ident name`. `makeRepoWithUpstream` and `cloneWorkingCopy` in [src/main/repo-sync/index.test.ts](./src/main/repo-sync/index.test.ts) both set it — mirror that in any new git-commit fixture.
+
 ## Tool registration call sites
 
 Tools are registered in [src/tools/repo-audit/index.ts](./src/tools/repo-audit/index.ts), [src/tools/repo-commit/index.ts](./src/tools/repo-commit/index.ts), [src/tools/repo-remotes/index.ts](./src/tools/repo-remotes/index.ts), and [src/tools/repo-sync/index.ts](./src/tools/repo-sync/index.ts). To survey the surface, `grep "registerTool" src/tools/*/index.ts`. README's [Available Tools](./README.md#available-tools) tabulates them with purposes and I/O shapes.
