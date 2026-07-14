@@ -6,7 +6,7 @@ interface SyncResultBase {
   abs_path: string
   ran_at: string
   dry_run: boolean
-  command: string[]
+  command: string
   stdout: string
   stderr: string
 }
@@ -71,7 +71,7 @@ export const fetchRepo = async (safeRoots: readonly string[], absPath: string, o
       prune: opts.prune,
       tags: opts.tags,
       all_remotes: opts.all_remotes,
-      command: ['git', ...args],
+      command: ['git', ...args].join(' '),
       stdout,
       stderr
     }
@@ -140,7 +140,7 @@ export const pullRepo = async (safeRoots: readonly string[], absPath: string, op
         rebase: opts.rebase,
         ff_only: opts.ff_only,
         autostash: opts.autostash,
-        command: ['git', ...fetchArgs],
+        command: ['git', ...fetchArgs].join(' '),
         stdout,
         stderr
       }
@@ -161,7 +161,7 @@ export const pullRepo = async (safeRoots: readonly string[], absPath: string, op
       rebase: opts.rebase,
       ff_only: opts.ff_only,
       autostash: opts.autostash,
-      command: ['git', ...args],
+      command: ['git', ...args].join(' '),
       stdout,
       stderr
     }
@@ -233,7 +233,7 @@ export const pushRepo = async (safeRoots: readonly string[], absPath: string, op
       set_upstream: opts.set_upstream,
       tags: opts.tags,
       delete: opts.delete,
-      command: ['git', ...args],
+      command: ['git', ...args].join(' '),
       stdout,
       stderr
     }

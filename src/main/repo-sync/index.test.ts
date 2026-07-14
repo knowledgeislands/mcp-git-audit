@@ -84,7 +84,7 @@ describe('fetchRepo', () => {
     const result = await fetchRepo(SAFE_ROOTS, repo, { remote: 'origin', prune: false, tags: false, all_remotes: false, dry_run: false })
     expect(result.dry_run).toBe(false)
     expect(result.remote).toBe('origin')
-    expect(result.command).toEqual(['git', 'fetch', '--', 'origin'])
+    expect(result.command).toBe('git fetch -- origin')
     // Confirm FETCH_HEAD actually moved by reading a now-fetched object.
     const { stdout: shaOut } = await git(repo, 'rev-parse', 'origin/main')
     const { stdout: bareShaOut } = await git(bare, 'rev-parse', 'main')
@@ -94,7 +94,7 @@ describe('fetchRepo', () => {
   it('passes through --prune, --tags, --dry-run, and --all', async () => {
     const { repo } = await makeRepoWithUpstream('fetch-flags')
     const result = await fetchRepo(SAFE_ROOTS, repo, { remote: 'origin', prune: true, tags: true, all_remotes: true, dry_run: true })
-    expect(result.command).toEqual(['git', 'fetch', '--prune', '--tags', '--dry-run', '--all'])
+    expect(result.command).toBe('git fetch --prune --tags --dry-run --all')
     expect(result.all_remotes).toBe(true)
     expect(result.prune).toBe(true)
     expect(result.tags).toBe(true)
@@ -135,7 +135,7 @@ describe('pullRepo', () => {
     const { repo } = await makeRepoWithUpstream('pull-dry')
     const result = await pullRepo(SAFE_ROOTS, repo, { remote: 'origin', rebase: false, ff_only: true, autostash: false, dry_run: true })
     expect(result.dry_run).toBe(true)
-    expect(result.command).toEqual(['git', 'fetch', '--dry-run', '--', 'origin', 'main'])
+    expect(result.command).toBe('git fetch --dry-run -- origin main')
   })
 
   it('wraps a dry_run fetch failure with the dry-run prefix', async () => {
@@ -155,7 +155,7 @@ describe('pullRepo', () => {
 
     const result = await pullRepo(SAFE_ROOTS, repo, { remote: 'origin', rebase: false, ff_only: true, autostash: false, dry_run: false })
     expect(result.dry_run).toBe(false)
-    expect(result.command).toEqual(['git', 'pull', '--ff-only', '--', 'origin', 'main'])
+    expect(result.command).toBe('git pull --ff-only -- origin main')
     const exists = await fs
       .stat(path.join(repo, 'b.txt'))
       .then(() => true)
@@ -187,7 +187,7 @@ describe('pullRepo', () => {
       autostash: true,
       dry_run: false
     })
-    expect(result.command).toEqual(['git', 'pull', '--rebase', '--autostash', '--', 'origin', 'main'])
+    expect(result.command).toBe('git pull --rebase --autostash -- origin main')
     // Both commits should now be in history.
     const { stdout } = await git(repo, 'log', '--pretty=format:%s')
     expect(stdout).toContain('local commit')
@@ -233,7 +233,7 @@ describe('pushRepo', () => {
       dry_run: true
     })
     expect(result.dry_run).toBe(true)
-    expect(result.command).toEqual(['git', 'push', '--dry-run', '--', 'origin', 'main'])
+    expect(result.command).toBe('git push --dry-run -- origin main')
     // Confirm bare upstream did NOT advance.
     const { stdout: bareSha } = await git(bare, 'rev-parse', 'main')
     const { stdout: localPriorSha } = await git(repo, 'rev-parse', 'HEAD~1')
@@ -250,7 +250,7 @@ describe('pushRepo', () => {
       delete: false,
       dry_run: true
     })
-    expect(result.command).toEqual(['git', 'push', '--dry-run', '--force-with-lease', '--set-upstream', '--tags', '--', 'origin', 'main'])
+    expect(result.command).toBe('git push --dry-run --force-with-lease --set-upstream --tags -- origin main')
     expect(result.force_mode).toBe('with_lease')
   })
 
@@ -264,7 +264,7 @@ describe('pushRepo', () => {
       delete: false,
       dry_run: true
     })
-    expect(result.command).toEqual(['git', 'push', '--dry-run', '--force', '--', 'origin', 'main'])
+    expect(result.command).toBe('git push --dry-run --force -- origin main')
   })
 
   it('runs a real push when dry_run=false and updates the bare upstream', async () => {
@@ -281,7 +281,7 @@ describe('pushRepo', () => {
       delete: false,
       dry_run: false
     })
-    expect(result.command).toEqual(['git', 'push', '--', 'origin', 'main'])
+    expect(result.command).toBe('git push -- origin main')
     const { stdout: localSha } = await git(repo, 'rev-parse', 'main')
     const { stdout: bareSha } = await git(bare, 'rev-parse', 'main')
     expect(localSha.trim()).toBe(bareSha.trim())
@@ -305,7 +305,7 @@ describe('pushRepo', () => {
       delete: true,
       dry_run: false
     })
-    expect(result.command).toEqual(['git', 'push', '--delete', '--', 'origin', 'feature'])
+    expect(result.command).toBe('git push --delete -- origin feature')
     // Branch should no longer exist on the bare upstream.
     await expect(git(bare, 'rev-parse', '--verify', 'refs/heads/feature')).rejects.toThrow()
   })
