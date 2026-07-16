@@ -1,16 +1,32 @@
-# Roadmap
+# Project roadmap
 
-Forward-looking plans only. Shipped features live in [README.md](./README.md); release history lives in the git log.
+This portfolio view is generated from the canonical theme roadmaps under `docs/roadmap/`. Edit those files, then run `ki-project-roadmap` CONFORM.
 
-## Next Up
+## Blocking
 
-## Future Advanced Capabilities
+Actively broken, or blocking the `Next` horizon: takes priority over everything else and must clear before `Next` work proceeds. Empty means nothing is on fire.
 
-- Worktree-pointer `.git` files (currently skipped — v1 only handles `.git` directories).
-- Stash / submodule state in the per-repo payload.
-- Multi-root audit in a single call (currently one root per call; multi-root is configuration only).
+## Next
 
-## Tooling
+Scoped and ready to start — the immediate queue, picked up before anything in **Soon** or **Future**.
 
-- Close coverage gap to satisfy the 100% vitest threshold (currently 97.4% lines / 92.3% branches). Major gaps: `config/index.ts` env-parse error paths and `audit-log.ts` rotation arms (kb-fs and m365 ship the same pattern — see their `/* v8 ignore */` on the rotateIfNeeded TOCTOU arm).
-- Smoke test (`bun run ki:test:smoke`) — boot the built server and verify the wire-level tool surface matches in-process registration. mcp-gmail has the reference implementation (`scripts/smoke.ts` + CI step); git-audit lacks both.
+- [Foundation Tooling: Adopt uniform governance modes and bootstrap](docs/roadmap/foundation-tooling/ROADMAP.md#adopt-uniform-governance-modes-and-bootstrap)
+
+## Soon
+
+Understood and roughly scoped but not yet started — worth doing once the **Next** queue clears, ahead of anything still speculative.
+
+- [Foundation Tooling: Add wire-level smoke test](docs/roadmap/foundation-tooling/ROADMAP.md#add-wire-level-smoke-test)
+- [Foundation Tooling: Close remaining coverage gap](docs/roadmap/foundation-tooling/ROADMAP.md#close-remaining-coverage-gap)
+
+## Waiting for
+
+Worth doing, but presently blocked on an external dependency or decision. Revisit when its named condition changes rather than treating it as dormant local work.
+
+## Future
+
+Speculative or not yet scoped — items marked _(candidate)_ need a scoping pass (or a decision to drop them) before they're actionable.
+
+- [Tool Surface: Audit multiple repository roots in one call](docs/roadmap/tool-surface/ROADMAP.md#audit-multiple-repository-roots-in-one-call)
+- [Tool Surface: Include stash and submodule state in repository payloads](docs/roadmap/tool-surface/ROADMAP.md#include-stash-and-submodule-state-in-repository-payloads)
+- [Tool Surface: Support worktree-pointer Git files](docs/roadmap/tool-surface/ROADMAP.md#support-worktree-pointer-git-files)
