@@ -38,6 +38,7 @@ beforeAll(async () => {
   const active = path.join(tmpRoot, 'active')
   await fs.mkdir(active, { recursive: true })
   await git(active, 'init', '-q', '-b', 'main')
+  await git(active, 'remote', 'add', 'origin', 'https://example.com/active.git')
   for (let i = 1; i <= 5; i++) {
     await fs.writeFile(path.join(active, `file-${i}.txt`), `commit ${i}\n`, 'utf-8')
     await git(active, 'add', '.')
@@ -86,6 +87,7 @@ describe('repoDetail', () => {
     expect(result.path.endsWith('/active')).toBe(true)
     expect(result.abs_path.endsWith('/active')).toBe(true)
     expect(result.fetched_at).toMatch(/^\d{4}-\d{2}-\d{2}T/)
+    expect(result.remote_url).toBe('https://example.com/active.git')
     for (const c of result.commits) {
       expect(c.sha).toMatch(/^[0-9a-f]{7,}$/)
       expect(c.author).toBe('Test Author')
@@ -147,6 +149,7 @@ describe('repoDetail', () => {
     expect(result.commits).toEqual([])
     expect(result.error).toBeUndefined()
     expect(result.working_tree.modified).toEqual([])
+    expect(result.remote_url).toBeNull()
   })
 
   it('surfaces a generic git log failure via the error field while still returning a result envelope', async () => {

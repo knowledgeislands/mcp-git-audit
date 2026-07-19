@@ -47,6 +47,7 @@ export interface RepoDetailResult {
   abs_path: string
   path: string
   fetched_at: string
+  remote_url: string | null
   commits: CommitDetail[]
   working_tree: WorkingTreeReport
   error?: string
@@ -138,6 +139,14 @@ const runGitDetail = async (repo: string, args: string[]): Promise<string> => {
   return stdout
 }
 
+const tryRunGitDetail = async (repo: string, args: string[]): Promise<string | null> => {
+  try {
+    return await runGitDetail(repo, args)
+  } catch {
+    return null
+  }
+}
+
 /**
  * Return commit history + working-tree status for a single repo identified by
  * an absolute path. The caller is responsible for ensuring `absPath` has been
@@ -150,6 +159,8 @@ export const repoDetail = async (safeRoots: readonly string[], absPath: string, 
   const relPath = path.relative(containingRoot, resolved).split(path.sep).join('/')
 
   const requested = Math.min(Math.max(1, Math.trunc(opts.commits)), MAX_COMMITS)
+  const remoteOut = await tryRunGitDetail(resolved, ['remote', 'get-url', 'origin'])
+  const remote_url = remoteOut?.trim() || null
   const logArgs = [
     'log',
     `-n${requested}`,
@@ -176,7 +187,7 @@ export const repoDetail = async (safeRoots: readonly string[], absPath: string, 
     if (!error) error = `git status failed: ${errMessage(err)}`
   }
 
-  const result: RepoDetailResult = { abs_path: resolved, path: relPath, fetched_at, commits, working_tree }
+  const result: RepoDetailResult = { abs_path: resolved, path: relPath, fetched_at, remote_url, commits, working_tree }
   if (error) result.error = error
   return result
 }

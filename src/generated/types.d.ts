@@ -1,4 +1,4 @@
-// Generated on 2026-07-19T00:07:33.203Z by @knowledgeislands/mcp-git-audit@1.0.0
+// Generated on 2026-07-19T22:15:50.649Z by @knowledgeislands/mcp-git-audit@1.0.0
 // Server: kit-mcp-git-audit
 // Source: /Users/krisbrown/.mcporter/mcporter.json
 // Transport: STDIO /Users/krisbrown/.local/share/mise/installs/node/lts/bin/node /Users/krisbrown/workspaces/kis/knowledgeislands/mcp-git-audit/dist/mcp-server/index.js
@@ -41,7 +41,7 @@ export interface KitMcpGitAuditTools {
    * Returns:
    * JSON object: { root, scanned_at, audited_at, repos: [...], errors?: [...] } where each repo entry
    * includes path, group, name, branch, detached, sha, subject, rel_date, iso_date, modified, untracked,
-   * has_remote, has_upstream, ahead, behind.
+   * has_remote, remote_url, has_upstream, ahead, behind.
    * Per-repo failures (e.g. corrupt .git/HEAD) are aggregated into the `errors` array rather than
    * failing the whole call.
    *
@@ -63,10 +63,10 @@ export interface KitMcpGitAuditTools {
    * - include_diffstat (boolean): When true, include per-commit `diffstat[]` from `git log --numstat`.
    * Default false. `files` count is always returned.
    * Returns:
-   * JSON object: { abs_path, path, fetched_at, commits: [{ sha, subject, author, iso_date, rel_date,
-   * files, diffstat? }], working_tree: { modified: [{ status, path }], summary: { modified, untracked }
-   * }, error? } where each `modified[]` entry's `status` is the raw two-character `git status
-   * --porcelain` code.
+   * JSON object: { abs_path, path, fetched_at, remote_url, commits: [{ sha, subject, author, iso_date,
+   * rel_date, files, diffstat? }], working_tree: { modified: [{ status, path }], summary: { modified,
+   * untracked } }, error? } where each `modified[]` entry's `status` is the raw two-character `git
+   * status --porcelain` code.
    * Status codes mirror `git status --porcelain` verbatim so downstream consumers other than the Cowork
    * artifact can interpret them precisely. Errors (timeout, unborn HEAD on a fresh repo with no commits)
    * surface as a `commits: []` result with an `error` field rather than throwing.

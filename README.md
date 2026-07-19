@@ -117,6 +117,7 @@ The level column shows the minimum `MCP_GIT_AUDIT_ACCESS_LEVEL` at which the too
     modified: number;
     untracked: number;
     has_remote: boolean;
+    remote_url: string | null;  // origin remote URL, null when origin is absent or unreadable
     has_upstream: boolean;
     ahead: number;
     behind: number;
@@ -163,6 +164,7 @@ Errors:
   abs_path: string;
   path: string;                       // relative to safe_root, forward slashes
   fetched_at: string;                 // ISO-8601 UTC
+  remote_url: string | null;          // origin remote URL, null when origin is absent or unreadable
   commits: Array<{
     sha: string;                      // short SHA
     subject: string;

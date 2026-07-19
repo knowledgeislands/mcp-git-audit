@@ -102,6 +102,7 @@ describe('auditRepo', () => {
         'name',
         'path',
         'rel_date',
+        'remote_url',
         'sha',
         'subject',
         'untracked'
@@ -116,6 +117,7 @@ describe('auditRepo', () => {
     expect(result.status.modified).toBe(0)
     expect(result.status.untracked).toBe(0)
     expect(result.status.has_remote).toBe(false)
+    expect(result.status.remote_url).toBeNull()
     expect(result.status.has_upstream).toBe(false)
     expect(result.status.ahead).toBe(0)
     expect(result.status.behind).toBe(0)
@@ -146,6 +148,7 @@ describe('auditRepo', () => {
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.status.has_remote).toBe(true)
+    expect(result.status.remote_url).toBe(path.join(tmpRoot, '_upstream-bare.git'))
     expect(result.status.has_upstream).toBe(true)
     expect(result.status.ahead).toBe(0)
     expect(result.status.behind).toBe(0)

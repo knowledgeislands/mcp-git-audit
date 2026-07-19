@@ -98,6 +98,7 @@ const auditedRepoSchema = z.object({
   modified: z.number(),
   untracked: z.number(),
   has_remote: z.boolean(),
+  remote_url: z.string().nullable(),
   has_upstream: z.boolean(),
   ahead: z.number(),
   behind: z.number()
@@ -134,6 +135,7 @@ const detailOutput = z.object({
   abs_path: z.string(),
   path: z.string(),
   fetched_at: z.string(),
+  remote_url: z.string().nullable(),
   commits: z.array(commitEntrySchema),
   working_tree: workingTreeSchema,
   error: z.string().optional()
@@ -185,7 +187,7 @@ Args:
   - include_stale_days (number): Reserved; currently unused. Default 30.
 
 Returns:
-  JSON object: { root, scanned_at, audited_at, repos: [...], errors?: [...] } where each repo entry includes path, group, name, branch, detached, sha, subject, rel_date, iso_date, modified, untracked, has_remote, has_upstream, ahead, behind.
+  JSON object: { root, scanned_at, audited_at, repos: [...], errors?: [...] } where each repo entry includes path, group, name, branch, detached, sha, subject, rel_date, iso_date, modified, untracked, has_remote, remote_url, has_upstream, ahead, behind.
 
 Per-repo failures (e.g. corrupt .git/HEAD) are aggregated into the \`errors\` array rather than failing the whole call.`,
       inputSchema: auditInput,
@@ -228,7 +230,7 @@ Args:
   - include_diffstat (boolean): When true, include per-commit \`diffstat[]\` from \`git log --numstat\`. Default false. \`files\` count is always returned.
 
 Returns:
-  JSON object: { abs_path, path, fetched_at, commits: [{ sha, subject, author, iso_date, rel_date, files, diffstat? }], working_tree: { modified: [{ status, path }], summary: { modified, untracked } }, error? } where each \`modified[]\` entry's \`status\` is the raw two-character \`git status --porcelain\` code.
+  JSON object: { abs_path, path, fetched_at, remote_url, commits: [{ sha, subject, author, iso_date, rel_date, files, diffstat? }], working_tree: { modified: [{ status, path }], summary: { modified, untracked } }, error? } where each \`modified[]\` entry's \`status\` is the raw two-character \`git status --porcelain\` code.
 
 Status codes mirror \`git status --porcelain\` verbatim so downstream consumers other than the Cowork artifact can interpret them precisely. Errors (timeout, unborn HEAD on a fresh repo with no commits) surface as a \`commits: []\` result with an \`error\` field rather than throwing.`,
       inputSchema: detailInput,

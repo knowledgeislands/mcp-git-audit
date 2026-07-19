@@ -19,6 +19,7 @@ export interface RepoStatus {
   modified: number
   untracked: number
   has_remote: boolean
+  remote_url: string | null
   has_upstream: boolean
   ahead: number
   behind: number
@@ -84,8 +85,9 @@ export const auditRepo = async (repo: ScannedRepo): Promise<{ ok: true; status: 
     const porcelain = await runGit(repo.abs_path, ['status', '--porcelain'])
     const { modified, untracked } = countStatusLines(porcelain)
 
-    const remoteOut = await runGit(repo.abs_path, ['remote'])
-    const has_remote = remoteOut.trim().length > 0
+    const remoteOut = await tryRunGit(repo.abs_path, ['remote', 'get-url', 'origin'])
+    const remote_url = remoteOut?.trim() || null
+    const has_remote = remote_url !== null
 
     const upstreamOut = await tryRunGit(repo.abs_path, ['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'])
     const has_upstream = upstreamOut !== null && upstreamOut.trim().length > 0
@@ -118,6 +120,7 @@ export const auditRepo = async (repo: ScannedRepo): Promise<{ ok: true; status: 
         modified,
         untracked,
         has_remote,
+        remote_url,
         has_upstream,
         ahead,
         behind
