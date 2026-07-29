@@ -19,17 +19,9 @@ const setUrlInput = z
   .object({
     abs_path: absPathSchema,
     remote: remoteNameSchema.describe('Existing remote name (e.g. "origin").'),
-    url: remoteUrlSchema.describe(
-      'New URL for the remote. Validated against an option-injection regex; transport semantics are left to git.'
-    ),
-    push: z
-      .boolean()
-      .default(false)
-      .describe('When true, update only the push URL (`git remote set-url --push`). Default false (update fetch URL).'),
-    dry_run: z
-      .boolean()
-      .default(true)
-      .describe('When true (default), no git mutation is performed; the call returns the current remote entry as `before`.')
+    url: remoteUrlSchema.describe('New URL for the remote. Validated against an option-injection regex; transport semantics are left to git.'),
+    push: z.boolean().default(false).describe('When true, update only the push URL (`git remote set-url --push`). Default false (update fetch URL).'),
+    dry_run: z.boolean().default(true).describe('When true (default), no git mutation is performed; the call returns the current remote entry as `before`.')
   })
   .strict()
 
@@ -37,9 +29,7 @@ const addInput = z
   .object({
     abs_path: absPathSchema,
     remote: remoteNameSchema.describe('New remote name (must not already exist).'),
-    url: remoteUrlSchema.describe(
-      'URL for the new remote. Validated against an option-injection regex; transport semantics are left to git.'
-    ),
+    url: remoteUrlSchema.describe('URL for the new remote. Validated against an option-injection regex; transport semantics are left to git.'),
     dry_run: z.boolean().default(true).describe('When true (default), no git mutation is performed.')
   })
   .strict()
@@ -48,10 +38,7 @@ const removeInput = z
   .object({
     abs_path: absPathSchema,
     remote: remoteNameSchema.describe('Existing remote name to remove.'),
-    dry_run: z
-      .boolean()
-      .default(true)
-      .describe('When true (default), no git mutation is performed; the call returns the current remote entry as `before`.')
+    dry_run: z.boolean().default(true).describe('When true (default), no git mutation is performed; the call returns the current remote entry as `before`.')
   })
   .strict()
 

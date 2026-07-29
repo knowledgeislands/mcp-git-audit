@@ -36,19 +36,12 @@ const pullInput = z
     ff_only: z
       .boolean()
       .default(true)
-      .describe(
-        'Pass `--ff-only` (default true). Aborts with a clear error when the upstream has diverged, instead of producing a merge commit.'
-      ),
-    autostash: z
-      .boolean()
-      .default(false)
-      .describe('Pass `--autostash` to stash uncommitted changes for the duration of the pull and re-apply afterwards.'),
+      .describe('Pass `--ff-only` (default true). Aborts with a clear error when the upstream has diverged, instead of producing a merge commit.'),
+    autostash: z.boolean().default(false).describe('Pass `--autostash` to stash uncommitted changes for the duration of the pull and re-apply afterwards.'),
     dry_run: z
       .boolean()
       .default(true)
-      .describe(
-        'When true (default), the call runs `git fetch --dry-run` against the same remote/branch instead of pulling — git pull has no native dry-run.'
-      )
+      .describe('When true (default), the call runs `git fetch --dry-run` against the same remote/branch instead of pulling — git pull has no native dry-run.')
   })
   .strict()
 
@@ -63,10 +56,7 @@ const pushInput = z
       .describe(
         '`none` (default): no force flag. `with_lease`: `--force-with-lease` (safer). `force`: `--force` (overwrites remote unconditionally — destructive).'
       ),
-    set_upstream: z
-      .boolean()
-      .default(false)
-      .describe('Pass `--set-upstream` to record the remote/branch as the upstream for future pulls.'),
+    set_upstream: z.boolean().default(false).describe('Pass `--set-upstream` to record the remote/branch as the upstream for future pulls.'),
     tags: z.boolean().default(false).describe('Pass `--tags` to push all tags reachable from the pushed refs.'),
     delete: z.boolean().default(false).describe('Pass `--delete` to delete the branch on the remote. Destructive.'),
     dry_run: z.boolean().default(true).describe('Pass `--dry-run` to git itself — negotiates with the remote but does not update any refs.')
@@ -207,9 +197,7 @@ Returns:
     },
     async ({ abs_path, remote, branch, force_mode, set_upstream, tags, delete: deleteFlag, dry_run }) => {
       try {
-        return jsonResult(
-          await pushRepo(cfg.safeRoots, abs_path, { remote, branch, force_mode, set_upstream, tags, delete: deleteFlag, dry_run })
-        )
+        return jsonResult(await pushRepo(cfg.safeRoots, abs_path, { remote, branch, force_mode, set_upstream, tags, delete: deleteFlag, dry_run }))
       } catch (err) {
         return errorResult('pushing', err)
       }

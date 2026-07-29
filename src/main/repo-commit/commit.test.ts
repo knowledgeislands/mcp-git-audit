@@ -115,53 +115,47 @@ describe('commitRepo', () => {
 
   it('rejects when stage="paths" but no paths are given', async () => {
     const repo = await makeRepo('paths-required')
-    await expect(commitRepo(SAFE_ROOTS, repo, { message: 'x', stage: 'paths', dry_run: true, allow_empty: false })).rejects.toThrow(
-      /paths is required/
-    )
+    await expect(commitRepo(SAFE_ROOTS, repo, { message: 'x', stage: 'paths', dry_run: true, allow_empty: false })).rejects.toThrow(/paths is required/)
   })
 
   it('rejects when paths are given for a non-paths stage mode', async () => {
     const repo = await makeRepo('paths-mismatch')
-    await expect(
-      commitRepo(SAFE_ROOTS, repo, { message: 'x', stage: 'all_tracked', paths: ['README.md'], dry_run: true, allow_empty: false })
-    ).rejects.toThrow(/only allowed when stage="paths"/)
+    await expect(commitRepo(SAFE_ROOTS, repo, { message: 'x', stage: 'all_tracked', paths: ['README.md'], dry_run: true, allow_empty: false })).rejects.toThrow(
+      /only allowed when stage="paths"/
+    )
   })
 
   it('rejects relative paths that escape or look like options', async () => {
     const repo = await makeRepo('reject-paths')
-    await expect(
-      commitRepo(SAFE_ROOTS, repo, { message: 'x', stage: 'paths', paths: ['../etc/passwd'], dry_run: true, allow_empty: false })
-    ).rejects.toThrow(/invalid path/)
-    await expect(
-      commitRepo(SAFE_ROOTS, repo, { message: 'x', stage: 'paths', paths: ['-rf'], dry_run: true, allow_empty: false })
-    ).rejects.toThrow(/invalid path/)
-    await expect(
-      commitRepo(SAFE_ROOTS, repo, { message: 'x', stage: 'paths', paths: ['/abs/path'], dry_run: true, allow_empty: false })
-    ).rejects.toThrow(/invalid path/)
-    await expect(
-      commitRepo(SAFE_ROOTS, repo, { message: 'x', stage: 'paths', paths: ['foo/../bar'], dry_run: true, allow_empty: false })
-    ).rejects.toThrow(/invalid path/)
+    await expect(commitRepo(SAFE_ROOTS, repo, { message: 'x', stage: 'paths', paths: ['../etc/passwd'], dry_run: true, allow_empty: false })).rejects.toThrow(
+      /invalid path/
+    )
+    await expect(commitRepo(SAFE_ROOTS, repo, { message: 'x', stage: 'paths', paths: ['-rf'], dry_run: true, allow_empty: false })).rejects.toThrow(
+      /invalid path/
+    )
+    await expect(commitRepo(SAFE_ROOTS, repo, { message: 'x', stage: 'paths', paths: ['/abs/path'], dry_run: true, allow_empty: false })).rejects.toThrow(
+      /invalid path/
+    )
+    await expect(commitRepo(SAFE_ROOTS, repo, { message: 'x', stage: 'paths', paths: ['foo/../bar'], dry_run: true, allow_empty: false })).rejects.toThrow(
+      /invalid path/
+    )
   })
 
   it('rejects an empty message', async () => {
     const repo = await makeRepo('empty-msg')
-    await expect(commitRepo(SAFE_ROOTS, repo, { message: '', stage: 'all_tracked', dry_run: true, allow_empty: false })).rejects.toThrow(
-      /must not be empty/
-    )
+    await expect(commitRepo(SAFE_ROOTS, repo, { message: '', stage: 'all_tracked', dry_run: true, allow_empty: false })).rejects.toThrow(/must not be empty/)
   })
 
   it('rejects a multi-line message', async () => {
     const repo = await makeRepo('multiline-msg')
-    await expect(
-      commitRepo(SAFE_ROOTS, repo, { message: 'line1\nline2', stage: 'all_tracked', dry_run: true, allow_empty: false })
-    ).rejects.toThrow(/single line/)
+    await expect(commitRepo(SAFE_ROOTS, repo, { message: 'line1\nline2', stage: 'all_tracked', dry_run: true, allow_empty: false })).rejects.toThrow(
+      /single line/
+    )
   })
 
   it('refuses to create an empty commit by default (allow_empty=false)', async () => {
     const repo = await makeRepo('empty-default')
-    await expect(commitRepo(SAFE_ROOTS, repo, { message: 'empty', stage: 'none', dry_run: false, allow_empty: false })).rejects.toThrow(
-      /git commit failed:/
-    )
+    await expect(commitRepo(SAFE_ROOTS, repo, { message: 'empty', stage: 'none', dry_run: false, allow_empty: false })).rejects.toThrow(/git commit failed:/)
   })
 
   it('creates an empty commit when allow_empty=true', async () => {

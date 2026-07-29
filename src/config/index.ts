@@ -142,9 +142,7 @@ export const loadConfig = (env: NodeJS.ProcessEnv = process.env): Config => {
     safeRoots: parseSafeRoots(env.MCP_GIT_AUDIT_SAFE_ROOTS),
     accessLevel: parseAccessLevel(env.MCP_GIT_AUDIT_ACCESS_LEVEL),
     auditLogMode: parseAuditLogMode(env.MCP_GIT_AUDIT_AUDIT_LOG),
-    auditLogPath: path.resolve(
-      expandHome(env.MCP_GIT_AUDIT_AUDIT_LOG_PATH ?? path.join(os.homedir(), '.local', 'state', 'mcp-git-audit', 'audit.jsonl'))
-    ),
+    auditLogPath: path.resolve(expandHome(env.MCP_GIT_AUDIT_AUDIT_LOG_PATH ?? path.join(os.homedir(), '.local', 'state', 'mcp-git-audit', 'audit.jsonl'))),
     auditLogMaxBytes: parseNonNegativeInt(env.MCP_GIT_AUDIT_AUDIT_LOG_MAX_BYTES, 10 * 1024 * 1024, 'MCP_GIT_AUDIT_AUDIT_LOG_MAX_BYTES'),
     auditLogKeep: parseNonNegativeInt(env.MCP_GIT_AUDIT_AUDIT_LOG_KEEP, 5, 'MCP_GIT_AUDIT_AUDIT_LOG_KEEP')
   }

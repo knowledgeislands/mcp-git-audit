@@ -18,20 +18,13 @@ const relPathSchema = z
   .string()
   .min(1)
   .max(4096)
-  .regex(
-    /^(?!-)(?!\/)(?!.*(?:^|\/)\.\.(?:\/|$))[^\0\r\n]{1,4096}$/,
-    'paths must be repo-relative, no leading "-" or "/", no ".." segments, no NUL/newline'
-  )
+  .regex(/^(?!-)(?!\/)(?!.*(?:^|\/)\.\.(?:\/|$))[^\0\r\n]{1,4096}$/, 'paths must be repo-relative, no leading "-" or "/", no ".." segments, no NUL/newline')
 
 const diffInput = z
   .object({
     abs_path: absPathSchema,
     staged: z.boolean().default(false).describe('`false` (default) → `git diff` (unstaged). `true` → `git diff --cached` (staged).'),
-    paths: z
-      .array(relPathSchema)
-      .max(1024)
-      .optional()
-      .describe('Limit the diff to these repo-relative paths. When omitted, returns every changed file.'),
+    paths: z.array(relPathSchema).max(1024).optional().describe('Limit the diff to these repo-relative paths. When omitted, returns every changed file.'),
     max_lines: z
       .number()
       .int()
@@ -60,11 +53,7 @@ const commitInput = z
       .describe(
         'What to stage before committing. `all_tracked` → `git add -u`. `all` → `git add -A`. `paths` → `git add -- <paths>` (requires `paths`). `none` → commit the index as-is.'
       ),
-    paths: z
-      .array(relPathSchema)
-      .max(1024)
-      .optional()
-      .describe('Required when `stage === "paths"`, rejected otherwise. Repo-relative file paths.'),
+    paths: z.array(relPathSchema).max(1024).optional().describe('Required when `stage === "paths"`, rejected otherwise. Repo-relative file paths.'),
     dry_run: z
       .boolean()
       .default(true)

@@ -102,9 +102,9 @@ describe('fetchRepo', () => {
 
   it('wraps git failures with a "git fetch failed:" prefix', async () => {
     const { repo } = await makeRepoWithUpstream('fetch-fail')
-    await expect(
-      fetchRepo(SAFE_ROOTS, repo, { remote: 'no-such-remote', prune: false, tags: false, all_remotes: false, dry_run: false })
-    ).rejects.toThrow(/git fetch failed:/)
+    await expect(fetchRepo(SAFE_ROOTS, repo, { remote: 'no-such-remote', prune: false, tags: false, all_remotes: false, dry_run: false })).rejects.toThrow(
+      /git fetch failed:/
+    )
   })
 })
 
@@ -113,9 +113,9 @@ describe('fetchRepo', () => {
 describe('pullRepo', () => {
   it('rejects ff_only=true with rebase=true', async () => {
     const { repo } = await makeRepoWithUpstream('pull-mutex')
-    await expect(
-      pullRepo(SAFE_ROOTS, repo, { remote: 'origin', rebase: true, ff_only: true, autostash: false, dry_run: false })
-    ).rejects.toThrow(/mutually exclusive/)
+    await expect(pullRepo(SAFE_ROOTS, repo, { remote: 'origin', rebase: true, ff_only: true, autostash: false, dry_run: false })).rejects.toThrow(
+      /mutually exclusive/
+    )
   })
 
   it('rejects detached HEAD without an explicit branch', async () => {
@@ -126,9 +126,9 @@ describe('pullRepo', () => {
     await git(repo, 'commit', '-q', '-m', 'second')
     const { stdout } = await git(repo, 'rev-parse', 'HEAD~1')
     await git(repo, 'checkout', '-q', stdout.trim())
-    await expect(
-      pullRepo(SAFE_ROOTS, repo, { remote: 'origin', rebase: false, ff_only: true, autostash: false, dry_run: false })
-    ).rejects.toThrow(/detached HEAD/)
+    await expect(pullRepo(SAFE_ROOTS, repo, { remote: 'origin', rebase: false, ff_only: true, autostash: false, dry_run: false })).rejects.toThrow(
+      /detached HEAD/
+    )
   })
 
   it('approximates dry_run via git fetch --dry-run and reports the executed argv', async () => {
@@ -140,9 +140,9 @@ describe('pullRepo', () => {
 
   it('wraps a dry_run fetch failure with the dry-run prefix', async () => {
     const { repo } = await makeRepoWithUpstream('pull-dry-fail')
-    await expect(
-      pullRepo(SAFE_ROOTS, repo, { remote: 'no-such', rebase: false, ff_only: true, autostash: false, dry_run: true })
-    ).rejects.toThrow(/pull dry-run/)
+    await expect(pullRepo(SAFE_ROOTS, repo, { remote: 'no-such', rebase: false, ff_only: true, autostash: false, dry_run: true })).rejects.toThrow(
+      /pull dry-run/
+    )
   })
 
   it('runs a real fast-forward pull with --ff-only and brings the working tree up to date', async () => {
@@ -196,9 +196,9 @@ describe('pullRepo', () => {
 
   it('wraps a real-pull failure with a "git pull failed:" prefix', async () => {
     const { repo } = await makeRepoWithUpstream('pull-fail')
-    await expect(
-      pullRepo(SAFE_ROOTS, repo, { remote: 'no-such', rebase: false, ff_only: true, autostash: false, dry_run: false })
-    ).rejects.toThrow(/git pull failed:/)
+    await expect(pullRepo(SAFE_ROOTS, repo, { remote: 'no-such', rebase: false, ff_only: true, autostash: false, dry_run: false })).rejects.toThrow(
+      /git pull failed:/
+    )
   })
 })
 
