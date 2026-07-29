@@ -17,3 +17,7 @@ Support worktree-pointer `.git` files; the current implementation handles only `
 ## Boundary
 
 Keep the work limited to the stated surface.
+
+## Discussion
+
+No discussion recorded yet; this item is unshaped by design at the `future` horizon.
