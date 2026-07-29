@@ -89,62 +89,6 @@ const removeRemoteOutput = z.object({
 
 export const registerRepoRemotesTools = (server: McpServer, cfg: Config): void => {
   server.registerTool(
-    'git_repo_remotes_list',
-    {
-      title: 'List configured remotes for a repo',
-      description: `Return the configured fetch/push URLs of every remote in the repo. Read-only — no network, no mutation.
-
-\`abs_path\` is revalidated against MCP_GIT_AUDIT_SAFE_ROOTS before any \`git\` call; the cache cannot widen the security boundary.
-
-Args:
-  - abs_path (string): Absolute path to a git repo, must live inside one of MCP_GIT_AUDIT_SAFE_ROOTS.
-
-Returns:
-  JSON object: { abs_path, fetched_at, remotes: [{ name, fetch_url, push_url }] }. \`push_url\` equals \`fetch_url\` unless an override was set with \`set-url --push\`.`,
-      inputSchema: listInput,
-      outputSchema: listRemotesOutput,
-      annotations: READ_ONLY
-    },
-    async ({ abs_path }) => {
-      try {
-        return jsonResult(await listRemotes(cfg.safeRoots, abs_path))
-      } catch (err) {
-        return errorResult('listing remotes', err)
-      }
-    }
-  )
-
-  server.registerTool(
-    'git_repo_remote_set_url',
-    {
-      title: "Change an existing remote's URL",
-      description: `Update the fetch or push URL of an existing remote. Idempotent: running twice with the same args produces the same end state. The remote must already exist — use \`git_repo_remote_add\` to create new remotes.
-
-Required access level: \`write\` or higher (MCP_GIT_AUDIT_ACCESS_LEVEL).
-
-Args:
-  - abs_path (string): Absolute path to a git repo, must live inside MCP_GIT_AUDIT_SAFE_ROOTS.
-  - remote (string): Name of an existing remote (e.g. "origin"). Pattern [A-Za-z0-9_.-], not starting with "-" or ".".
-  - url (string): New URL. Must not start with "-" (option-injection guard); whitespace and control chars are rejected.
-  - push (boolean): When true, update only the push URL. Default false.
-  - dry_run (boolean): When true (default), no mutation; the call returns the current remote entry as \`before\` for inspection.
-
-Returns:
-  JSON object: { abs_path, changed_at, dry_run, remote, before, after?, stderr }. \`after\` is omitted when \`dry_run=true\`.`,
-      inputSchema: setUrlInput,
-      outputSchema: setUrlOutput,
-      annotations: WRITE_IDEMPOTENT
-    },
-    async ({ abs_path, remote, url, push, dry_run }) => {
-      try {
-        return jsonResult(await setRemoteUrl(cfg.safeRoots, abs_path, { remote, url, push, dry_run }))
-      } catch (err) {
-        return errorResult('setting remote url', err)
-      }
-    }
-  )
-
-  server.registerTool(
     'git_repo_remote_add',
     {
       title: 'Add a new remote',
@@ -197,6 +141,62 @@ Returns:
         return jsonResult(await removeRemote(cfg.safeRoots, abs_path, { remote, dry_run }))
       } catch (err) {
         return errorResult('removing remote', err)
+      }
+    }
+  )
+
+  server.registerTool(
+    'git_repo_remote_set_url',
+    {
+      title: "Change an existing remote's URL",
+      description: `Update the fetch or push URL of an existing remote. Idempotent: running twice with the same args produces the same end state. The remote must already exist — use \`git_repo_remote_add\` to create new remotes.
+
+Required access level: \`write\` or higher (MCP_GIT_AUDIT_ACCESS_LEVEL).
+
+Args:
+  - abs_path (string): Absolute path to a git repo, must live inside MCP_GIT_AUDIT_SAFE_ROOTS.
+  - remote (string): Name of an existing remote (e.g. "origin"). Pattern [A-Za-z0-9_.-], not starting with "-" or ".".
+  - url (string): New URL. Must not start with "-" (option-injection guard); whitespace and control chars are rejected.
+  - push (boolean): When true, update only the push URL. Default false.
+  - dry_run (boolean): When true (default), no mutation; the call returns the current remote entry as \`before\` for inspection.
+
+Returns:
+  JSON object: { abs_path, changed_at, dry_run, remote, before, after?, stderr }. \`after\` is omitted when \`dry_run=true\`.`,
+      inputSchema: setUrlInput,
+      outputSchema: setUrlOutput,
+      annotations: WRITE_IDEMPOTENT
+    },
+    async ({ abs_path, remote, url, push, dry_run }) => {
+      try {
+        return jsonResult(await setRemoteUrl(cfg.safeRoots, abs_path, { remote, url, push, dry_run }))
+      } catch (err) {
+        return errorResult('setting remote url', err)
+      }
+    }
+  )
+
+  server.registerTool(
+    'git_repo_remotes_list',
+    {
+      title: 'List configured remotes for a repo',
+      description: `Return the configured fetch/push URLs of every remote in the repo. Read-only — no network, no mutation.
+
+\`abs_path\` is revalidated against MCP_GIT_AUDIT_SAFE_ROOTS before any \`git\` call; the cache cannot widen the security boundary.
+
+Args:
+  - abs_path (string): Absolute path to a git repo, must live inside one of MCP_GIT_AUDIT_SAFE_ROOTS.
+
+Returns:
+  JSON object: { abs_path, fetched_at, remotes: [{ name, fetch_url, push_url }] }. \`push_url\` equals \`fetch_url\` unless an override was set with \`set-url --push\`.`,
+      inputSchema: listInput,
+      outputSchema: listRemotesOutput,
+      annotations: READ_ONLY
+    },
+    async ({ abs_path }) => {
+      try {
+        return jsonResult(await listRemotes(cfg.safeRoots, abs_path))
+      } catch (err) {
+        return errorResult('listing remotes', err)
       }
     }
   )
