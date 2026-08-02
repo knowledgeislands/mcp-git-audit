@@ -10,6 +10,10 @@ blocked-by: []
 baseline-ref: null
 ---
 
+## Goal
+
+Achieve the stated outcome: Include stash and submodule state in repository payloads.
+
 ## Context
 
 Extend each repository payload with stash and submodule state.

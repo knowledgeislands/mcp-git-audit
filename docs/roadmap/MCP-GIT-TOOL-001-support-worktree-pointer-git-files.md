@@ -10,6 +10,10 @@ blocked-by: []
 baseline-ref: null
 ---
 
+## Goal
+
+Achieve the stated outcome: Support worktree-pointer Git files.
+
 ## Context
 
 Support worktree-pointer `.git` files; the current implementation handles only `.git` directories.

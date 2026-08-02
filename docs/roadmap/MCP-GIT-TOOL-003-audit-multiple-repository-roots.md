@@ -10,6 +10,10 @@ blocked-by: []
 baseline-ref: null
 ---
 
+## Goal
+
+Achieve the stated outcome: Audit multiple repository roots in one call.
+
 ## Context
 
 Add multi-root audit in a single call; multi-root is currently configuration-only and each request handles one root.
