@@ -1,4 +1,5 @@
 ["knowledgeislands/ki-agentic-harness:ki-repo"]
+repository = "https://github.com/knowledgeislands/mcp-git-audit"
 title = "mcp-git-audit"
 description = "MCP for branch, working-tree, and upstream status across local git repositories."
 repo_code = "MCP-GIT"

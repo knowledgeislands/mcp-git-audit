@@ -3,7 +3,7 @@ id: MCP-GIT-TOOL-003
 title: Audit multiple repositories
 theme: tool-surface
 horizon: future
-status: open
+status: draft
 candidate: true
 blocks: []
 blocked-by: []

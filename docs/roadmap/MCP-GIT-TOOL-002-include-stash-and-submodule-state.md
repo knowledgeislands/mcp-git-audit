@@ -3,7 +3,7 @@ id: MCP-GIT-TOOL-002
 title: Include stash, submodule state
 theme: tool-surface
 horizon: future
-status: open
+status: draft
 candidate: true
 blocks: []
 blocked-by: []

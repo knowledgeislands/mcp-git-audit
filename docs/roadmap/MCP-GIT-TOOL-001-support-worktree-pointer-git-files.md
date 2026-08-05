@@ -3,7 +3,7 @@ id: MCP-GIT-TOOL-001
 title: Support worktree pointers
 theme: tool-surface
 horizon: future
-status: open
+status: draft
 candidate: true
 blocks: []
 blocked-by: []
