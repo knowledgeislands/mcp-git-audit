@@ -1,6 +1,6 @@
 ---
 id: MCP-GIT-TOOL-002
-title: Include stash and submodule state in repository payloads
+title: Include stash, submodule state
 theme: tool-surface
 horizon: future
 status: open

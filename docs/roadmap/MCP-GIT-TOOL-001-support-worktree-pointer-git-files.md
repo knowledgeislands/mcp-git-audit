@@ -1,6 +1,6 @@
 ---
 id: MCP-GIT-TOOL-001
-title: Support worktree-pointer Git files
+title: Support worktree pointers
 theme: tool-surface
 horizon: future
 status: open

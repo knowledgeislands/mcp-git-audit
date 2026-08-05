@@ -1,6 +1,6 @@
 ---
 id: MCP-GIT-TOOL-003
-title: Audit multiple repository roots in one call
+title: Audit multiple repositories
 theme: tool-surface
 horizon: future
 status: open
