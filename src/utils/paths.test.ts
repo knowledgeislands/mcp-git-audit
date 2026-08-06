@@ -49,7 +49,9 @@ describe('resolveAgainstSafeRoots', () => {
   it('rejects a path outside every safe root', async () => {
     const outside = path.join(tmpRoot, 'not-safe')
     await fs.mkdir(outside, { recursive: true })
-    await expect(resolveAgainstSafeRoots(outside, [safeA, safeB])).rejects.toThrow(/not inside any configured safe_root/)
+    await expect(resolveAgainstSafeRoots(outside, [safeA, safeB])).rejects.toThrow(
+      /not inside any configured safe_root/
+    )
   })
 
   it('rejects a relative path', async () => {
@@ -58,7 +60,9 @@ describe('resolveAgainstSafeRoots', () => {
 
   it('expands ~/ before checking', async () => {
     // expand ~/<something-that-cannot-exist-under-home> — should still reject cleanly
-    await expect(resolveAgainstSafeRoots('~/__mcp_git_audit_definitely_not_real__', [safeA])).rejects.toThrow(/not inside any configured safe_root/)
+    await expect(resolveAgainstSafeRoots('~/__mcp_git_audit_definitely_not_real__', [safeA])).rejects.toThrow(
+      /not inside any configured safe_root/
+    )
   })
 
   it('accepts a path that does not exist yet, as long as its nearest existing ancestor is inside a safe root', async () => {
@@ -75,6 +79,8 @@ describe('resolveAgainstSafeRoots', () => {
     } catch {
       // already exists from a prior run
     }
-    await expect(resolveAgainstSafeRoots(linkInsideSafe, [safeA, safeB])).rejects.toThrow(/not inside any configured safe_root/)
+    await expect(resolveAgainstSafeRoots(linkInsideSafe, [safeA, safeB])).rejects.toThrow(
+      /not inside any configured safe_root/
+    )
   })
 })

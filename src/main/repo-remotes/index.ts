@@ -47,7 +47,8 @@ const parseRemoteVerbose = (stdout: string): RemoteEntry[] => {
     .sort((a, b) => a.name.localeCompare(b.name))
 }
 
-const findRemote = (entries: RemoteEntry[], name: string): RemoteEntry | undefined => entries.find((r) => r.name === name)
+const findRemote = (entries: RemoteEntry[], name: string): RemoteEntry | undefined =>
+  entries.find((r) => r.name === name)
 
 const readRemotes = async (resolvedRepo: string): Promise<RemoteEntry[]> => {
   const { stdout } = await runGitCapture(resolvedRepo, ['remote', '-v'], GIT_LOCAL_TIMEOUT_MS)
@@ -77,7 +78,11 @@ export interface SetUrlOptions {
  * URL (`git remote set-url --push`); otherwise updates the fetch URL.
  * Idempotent: running twice with the same args produces the same end state.
  */
-export const setRemoteUrl = async (safeRoots: readonly string[], absPath: string, opts: SetUrlOptions): Promise<MutateRemoteResult> => {
+export const setRemoteUrl = async (
+  safeRoots: readonly string[],
+  absPath: string,
+  opts: SetUrlOptions
+): Promise<MutateRemoteResult> => {
   const resolved = await resolveAgainstSafeRoots(absPath, safeRoots)
   const before = findRemote(await readRemotes(resolved), opts.remote)
   if (!before) {
@@ -105,11 +110,17 @@ export interface AddRemoteOptions {
  * Add a new remote. Non-idempotent: the second call fails because the remote
  * already exists. Fetches no objects.
  */
-export const addRemote = async (safeRoots: readonly string[], absPath: string, opts: AddRemoteOptions): Promise<MutateRemoteResult> => {
+export const addRemote = async (
+  safeRoots: readonly string[],
+  absPath: string,
+  opts: AddRemoteOptions
+): Promise<MutateRemoteResult> => {
   const resolved = await resolveAgainstSafeRoots(absPath, safeRoots)
   const existing = findRemote(await readRemotes(resolved), opts.remote)
   if (existing) {
-    throw new Error(`remote "${opts.remote}" already exists (fetch=${existing.fetch_url}); use git_repo_remote_set_url to change its URL`)
+    throw new Error(
+      `remote "${opts.remote}" already exists (fetch=${existing.fetch_url}); use git_repo_remote_set_url to change its URL`
+    )
   }
   const changed_at = new Date().toISOString()
   if (opts.dry_run) {
@@ -130,7 +141,11 @@ export interface RemoveRemoteOptions {
  * remote-tracking refs (`refs/remotes/<name>/*`). Working-tree files are
  * untouched. Idempotent end state: gone is gone.
  */
-export const removeRemote = async (safeRoots: readonly string[], absPath: string, opts: RemoveRemoteOptions): Promise<MutateRemoteResult> => {
+export const removeRemote = async (
+  safeRoots: readonly string[],
+  absPath: string,
+  opts: RemoveRemoteOptions
+): Promise<MutateRemoteResult> => {
   const resolved = await resolveAgainstSafeRoots(absPath, safeRoots)
   const before = findRemote(await readRemotes(resolved), opts.remote)
   if (!before) {

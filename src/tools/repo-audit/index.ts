@@ -7,7 +7,10 @@ import { errMessage } from '../../utils/errors.js'
 import { resolveAgainstSafeRoots } from '../../utils/paths.js'
 import { errorResult, jsonResult } from '../../utils/results.js'
 
-const resolveRootArg = async (safeRoots: readonly string[], root: string | undefined): Promise<string | { error: string }> => {
+const resolveRootArg = async (
+  safeRoots: readonly string[],
+  root: string | undefined
+): Promise<string | { error: string }> => {
   if (root === undefined) {
     const [sole] = safeRoots
     if (safeRoots.length !== 1 || sole === undefined) {
@@ -28,8 +31,16 @@ const scanInput = z
       .string()
       .min(1)
       .optional()
-      .describe('Absolute or ~-expanded path to walk. Must be inside one of MCP_GIT_AUDIT_SAFE_ROOTS. Omit when exactly one safe root is configured.'),
-    max_depth: z.number().int().min(1).max(8).default(2).describe('Maximum depth (from `root`) at which a repo directory may live. Default 2.')
+      .describe(
+        'Absolute or ~-expanded path to walk. Must be inside one of MCP_GIT_AUDIT_SAFE_ROOTS. Omit when exactly one safe root is configured.'
+      ),
+    max_depth: z
+      .number()
+      .int()
+      .min(1)
+      .max(8)
+      .default(2)
+      .describe('Maximum depth (from `root`) at which a repo directory may live. Default 2.')
   })
   .strict()
 
@@ -51,8 +62,15 @@ const auditInput = z
         repos: z.array(scannedRepoSchema)
       })
       .strict()
-      .describe('A previous scan result. Every repo `abs_path` is revalidated against MCP_GIT_AUDIT_SAFE_ROOTS before any `git` call is made.'),
-    include_stale_days: z.number().int().min(1).default(30).describe('Reserved — currently unused; the consumer computes stale itself.')
+      .describe(
+        'A previous scan result. Every repo `abs_path` is revalidated against MCP_GIT_AUDIT_SAFE_ROOTS before any `git` call is made.'
+      ),
+    include_stale_days: z
+      .number()
+      .int()
+      .min(1)
+      .default(30)
+      .describe('Reserved — currently unused; the consumer computes stale itself.')
   })
   .strict()
 
@@ -64,11 +82,19 @@ const detailInput = z
       .describe(
         'Absolute path to a git repo, taken from a prior `git_repos_scan`/`git_repos_audit` result. Revalidated against MCP_GIT_AUDIT_SAFE_ROOTS before any `git` call.'
       ),
-    commits: z.number().int().min(1).max(50).default(10).describe('How many recent commits to return (newest first). Hard cap 50.'),
+    commits: z
+      .number()
+      .int()
+      .min(1)
+      .max(50)
+      .default(10)
+      .describe('How many recent commits to return (newest first). Hard cap 50.'),
     include_diffstat: z
       .boolean()
       .default(false)
-      .describe('When true, include per-commit `diffstat[]` (added/removed/path) from `git log --numstat`. Slightly slower; `files` count is always returned.')
+      .describe(
+        'When true, include per-commit `diffstat[]` (added/removed/path) from `git log --numstat`. Slightly slower; `files` count is always returned.'
+      )
   })
   .strict()
 

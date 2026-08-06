@@ -66,7 +66,9 @@ const countStatusLines = (porcelain: string): { modified: number; untracked: num
   return { modified, untracked }
 }
 
-export const auditRepo = async (repo: ScannedRepo): Promise<{ ok: true; status: RepoStatus } | { ok: false; error: AuditError }> => {
+export const auditRepo = async (
+  repo: ScannedRepo
+): Promise<{ ok: true; status: RepoStatus } | { ok: false; error: AuditError }> => {
   try {
     const sha = (await runGit(repo.abs_path, ['rev-parse', '--short', 'HEAD'])).trim()
 

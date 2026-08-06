@@ -17,10 +17,22 @@ const fetchInput = z
   .object({
     abs_path: absPathSchema,
     remote: remoteNameSchema.default('origin').describe('Remote to fetch from. Ignored when `all_remotes=true`.'),
-    prune: z.boolean().default(false).describe('Pass `--prune` to drop remote-tracking refs whose upstream branches have been deleted.'),
-    tags: z.boolean().default(false).describe('Pass `--tags` to fetch all tags, not just those reachable from fetched commits.'),
-    all_remotes: z.boolean().default(false).describe('Pass `--all` to fetch every configured remote. Overrides `remote`.'),
-    dry_run: z.boolean().default(false).describe('Pass `--dry-run` to git itself — connects to the remote but does not update local refs.')
+    prune: z
+      .boolean()
+      .default(false)
+      .describe('Pass `--prune` to drop remote-tracking refs whose upstream branches have been deleted.'),
+    tags: z
+      .boolean()
+      .default(false)
+      .describe('Pass `--tags` to fetch all tags, not just those reachable from fetched commits.'),
+    all_remotes: z
+      .boolean()
+      .default(false)
+      .describe('Pass `--all` to fetch every configured remote. Overrides `remote`.'),
+    dry_run: z
+      .boolean()
+      .default(false)
+      .describe('Pass `--dry-run` to git itself — connects to the remote but does not update local refs.')
   })
   .strict()
 
@@ -28,20 +40,33 @@ const pullInput = z
   .object({
     abs_path: absPathSchema,
     remote: remoteNameSchema.default('origin').describe('Remote to pull from.'),
-    branch: branchNameSchema.optional().describe("Branch to pull. Defaults to the repo's current branch. Required when HEAD is detached."),
+    branch: branchNameSchema
+      .optional()
+      .describe("Branch to pull. Defaults to the repo's current branch. Required when HEAD is detached."),
     rebase: z
       .boolean()
       .default(false)
-      .describe('Pass `--rebase` to rebase local commits onto the upstream instead of merging. Rewrites history — opt in explicitly.'),
+      .describe(
+        'Pass `--rebase` to rebase local commits onto the upstream instead of merging. Rewrites history — opt in explicitly.'
+      ),
     ff_only: z
       .boolean()
       .default(true)
-      .describe('Pass `--ff-only` (default true). Aborts with a clear error when the upstream has diverged, instead of producing a merge commit.'),
-    autostash: z.boolean().default(false).describe('Pass `--autostash` to stash uncommitted changes for the duration of the pull and re-apply afterwards.'),
+      .describe(
+        'Pass `--ff-only` (default true). Aborts with a clear error when the upstream has diverged, instead of producing a merge commit.'
+      ),
+    autostash: z
+      .boolean()
+      .default(false)
+      .describe(
+        'Pass `--autostash` to stash uncommitted changes for the duration of the pull and re-apply afterwards.'
+      ),
     dry_run: z
       .boolean()
       .default(true)
-      .describe('When true (default), the call runs `git fetch --dry-run` against the same remote/branch instead of pulling — git pull has no native dry-run.')
+      .describe(
+        'When true (default), the call runs `git fetch --dry-run` against the same remote/branch instead of pulling — git pull has no native dry-run.'
+      )
   })
   .strict()
 
@@ -49,17 +74,25 @@ const pushInput = z
   .object({
     abs_path: absPathSchema,
     remote: remoteNameSchema.default('origin').describe('Remote to push to.'),
-    branch: branchNameSchema.optional().describe("Branch to push. Defaults to the repo's current branch. Required when HEAD is detached."),
+    branch: branchNameSchema
+      .optional()
+      .describe("Branch to push. Defaults to the repo's current branch. Required when HEAD is detached."),
     force_mode: z
       .enum(['none', 'with_lease', 'force'])
       .default('none')
       .describe(
         '`none` (default): no force flag. `with_lease`: `--force-with-lease` (safer). `force`: `--force` (overwrites remote unconditionally — destructive).'
       ),
-    set_upstream: z.boolean().default(false).describe('Pass `--set-upstream` to record the remote/branch as the upstream for future pulls.'),
+    set_upstream: z
+      .boolean()
+      .default(false)
+      .describe('Pass `--set-upstream` to record the remote/branch as the upstream for future pulls.'),
     tags: z.boolean().default(false).describe('Pass `--tags` to push all tags reachable from the pushed refs.'),
     delete: z.boolean().default(false).describe('Pass `--delete` to delete the branch on the remote. Destructive.'),
-    dry_run: z.boolean().default(true).describe('Pass `--dry-run` to git itself — negotiates with the remote but does not update any refs.')
+    dry_run: z
+      .boolean()
+      .default(true)
+      .describe('Pass `--dry-run` to git itself — negotiates with the remote but does not update any refs.')
   })
   .strict()
 
@@ -164,7 +197,9 @@ Returns:
     },
     async ({ abs_path, remote, branch, rebase, ff_only, autostash, dry_run }) => {
       try {
-        return jsonResult(await pullRepo(cfg.safeRoots, abs_path, { remote, branch, rebase, ff_only, autostash, dry_run }))
+        return jsonResult(
+          await pullRepo(cfg.safeRoots, abs_path, { remote, branch, rebase, ff_only, autostash, dry_run })
+        )
       } catch (err) {
         return errorResult('pulling', err)
       }
@@ -197,7 +232,17 @@ Returns:
     },
     async ({ abs_path, remote, branch, force_mode, set_upstream, tags, delete: deleteFlag, dry_run }) => {
       try {
-        return jsonResult(await pushRepo(cfg.safeRoots, abs_path, { remote, branch, force_mode, set_upstream, tags, delete: deleteFlag, dry_run }))
+        return jsonResult(
+          await pushRepo(cfg.safeRoots, abs_path, {
+            remote,
+            branch,
+            force_mode,
+            set_upstream,
+            tags,
+            delete: deleteFlag,
+            dry_run
+          })
+        )
       } catch (err) {
         return errorResult('pushing', err)
       }

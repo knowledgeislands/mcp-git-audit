@@ -153,7 +153,11 @@ const tryRunGitDetail = async (repo: string, args: string[]): Promise<string | n
  * revalidated against `safeRoots` — but we re-check here as defence in depth.
  * No fetching, no diff content, no cross-repo work.
  */
-export const repoDetail = async (safeRoots: readonly string[], absPath: string, opts: RepoDetailOptions): Promise<RepoDetailResult> => {
+export const repoDetail = async (
+  safeRoots: readonly string[],
+  absPath: string,
+  opts: RepoDetailOptions
+): Promise<RepoDetailResult> => {
   const fetched_at = new Date().toISOString()
   const { resolved, containingRoot } = await resolveAndLocateAgainstSafeRoots(absPath, safeRoots)
   const relPath = path.relative(containingRoot, resolved).split(path.sep).join('/')
@@ -161,7 +165,12 @@ export const repoDetail = async (safeRoots: readonly string[], absPath: string, 
   const requested = Math.min(Math.max(1, Math.trunc(opts.commits)), MAX_COMMITS)
   const remoteOut = await tryRunGitDetail(resolved, ['remote', 'get-url', 'origin'])
   const remote_url = remoteOut?.trim() || null
-  const logArgs = ['log', `-n${requested}`, `--pretty=format:${COMMIT_SEP}%h${FIELD_SEP}%s${FIELD_SEP}%an${FIELD_SEP}%cI${FIELD_SEP}%ar`, '--numstat']
+  const logArgs = [
+    'log',
+    `-n${requested}`,
+    `--pretty=format:${COMMIT_SEP}%h${FIELD_SEP}%s${FIELD_SEP}%an${FIELD_SEP}%cI${FIELD_SEP}%ar`,
+    '--numstat'
+  ]
 
   let commits: CommitDetail[] = []
   let error: string | undefined

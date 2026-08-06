@@ -26,7 +26,10 @@ describe('loadConfig', () => {
     })
 
     it('expands ~/ in each entry', () => {
-      expect(load({ MCP_GIT_AUDIT_SAFE_ROOTS: '~/foo:~/bar' }).safeRoots).toEqual([path.join(os.homedir(), 'foo'), path.join(os.homedir(), 'bar')])
+      expect(load({ MCP_GIT_AUDIT_SAFE_ROOTS: '~/foo:~/bar' }).safeRoots).toEqual([
+        path.join(os.homedir(), 'foo'),
+        path.join(os.homedir(), 'bar')
+      ])
     })
 
     it('accepts a colon-separated list of absolute paths', () => {
@@ -92,7 +95,9 @@ describe('loadConfig', () => {
     })
 
     it('expands ~/foo in the override', () => {
-      expect(load({ MCP_GIT_AUDIT_AUDIT_LOG_PATH: '~/foo/audit.jsonl' }).auditLogPath).toBe(path.join(os.homedir(), 'foo', 'audit.jsonl'))
+      expect(load({ MCP_GIT_AUDIT_AUDIT_LOG_PATH: '~/foo/audit.jsonl' }).auditLogPath).toBe(
+        path.join(os.homedir(), 'foo', 'audit.jsonl')
+      )
     })
 
     it('passes absolute paths through unchanged', () => {
@@ -144,7 +149,9 @@ describe('loadConfig', () => {
     })
 
     it('throws on a non-numeric value', () => {
-      expect(() => load({ MCP_GIT_AUDIT_AUDIT_LOG_MAX_BYTES: 'lots' })).toThrow(/MCP_GIT_AUDIT_AUDIT_LOG_MAX_BYTES="lots"/)
+      expect(() => load({ MCP_GIT_AUDIT_AUDIT_LOG_MAX_BYTES: 'lots' })).toThrow(
+        /MCP_GIT_AUDIT_AUDIT_LOG_MAX_BYTES="lots"/
+      )
     })
   })
 })

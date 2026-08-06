@@ -137,10 +137,18 @@ describe('diffRepo', () => {
 
   it('rejects relative paths that escape or look like options', async () => {
     const repo = await makeRepo('reject-paths')
-    await expect(diffRepo(SAFE_ROOTS, repo, { staged: false, paths: ['../etc/passwd'], max_lines: 500 })).rejects.toThrow(/invalid path/)
-    await expect(diffRepo(SAFE_ROOTS, repo, { staged: false, paths: ['/etc/passwd'], max_lines: 500 })).rejects.toThrow(/invalid path/)
-    await expect(diffRepo(SAFE_ROOTS, repo, { staged: false, paths: ['-rf'], max_lines: 500 })).rejects.toThrow(/invalid path/)
-    await expect(diffRepo(SAFE_ROOTS, repo, { staged: false, paths: ['foo/../bar'], max_lines: 500 })).rejects.toThrow(/invalid path/)
+    await expect(
+      diffRepo(SAFE_ROOTS, repo, { staged: false, paths: ['../etc/passwd'], max_lines: 500 })
+    ).rejects.toThrow(/invalid path/)
+    await expect(diffRepo(SAFE_ROOTS, repo, { staged: false, paths: ['/etc/passwd'], max_lines: 500 })).rejects.toThrow(
+      /invalid path/
+    )
+    await expect(diffRepo(SAFE_ROOTS, repo, { staged: false, paths: ['-rf'], max_lines: 500 })).rejects.toThrow(
+      /invalid path/
+    )
+    await expect(diffRepo(SAFE_ROOTS, repo, { staged: false, paths: ['foo/../bar'], max_lines: 500 })).rejects.toThrow(
+      /invalid path/
+    )
   })
 
   it('clamps an out-of-range max_lines into [1, ceiling]', async () => {

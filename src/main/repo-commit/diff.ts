@@ -140,7 +140,9 @@ const validateRelPaths = (paths: readonly string[] | undefined): string[] => {
   const out: string[] = []
   for (const p of paths) {
     if (!REL_PATH_RE.test(p)) {
-      throw new Error(`invalid path "${p}": must be repo-relative, no leading "-" or "/", no ".." segments, no NUL/newline`)
+      throw new Error(
+        `invalid path "${p}": must be repo-relative, no leading "-" or "/", no ".." segments, no NUL/newline`
+      )
     }
     out.push(p)
   }
@@ -159,7 +161,11 @@ const validateRelPaths = (paths: readonly string[] | undefined): string[] => {
  * is recorded on that file entry; subsequent files are likewise null+truncated.
  * The top-level `truncated` is the disjunction over file entries.
  */
-export const diffRepo = async (safeRoots: readonly string[], absPath: string, opts: DiffOptions): Promise<DiffResult> => {
+export const diffRepo = async (
+  safeRoots: readonly string[],
+  absPath: string,
+  opts: DiffOptions
+): Promise<DiffResult> => {
   const resolved = await resolveAgainstSafeRoots(absPath, safeRoots)
   const paths = validateRelPaths(opts.paths)
   const maxLines = Math.min(Math.max(1, Math.trunc(opts.max_lines)), DIFF_MAX_LINES_CEILING)
@@ -175,8 +181,12 @@ export const diffRepo = async (safeRoots: readonly string[], absPath: string, op
   let diffOut: string
   try {
     ;[numstatOut, nameStatusOut, diffOut] = await Promise.all([
-      runGitCapture(resolved, [...baseArgs, '--numstat', '-z', ...pathArgs], GIT_LOCAL_TIMEOUT_MS).then((r) => r.stdout),
-      runGitCapture(resolved, [...baseArgs, '--name-status', '-z', ...pathArgs], GIT_LOCAL_TIMEOUT_MS).then((r) => r.stdout),
+      runGitCapture(resolved, [...baseArgs, '--numstat', '-z', ...pathArgs], GIT_LOCAL_TIMEOUT_MS).then(
+        (r) => r.stdout
+      ),
+      runGitCapture(resolved, [...baseArgs, '--name-status', '-z', ...pathArgs], GIT_LOCAL_TIMEOUT_MS).then(
+        (r) => r.stdout
+      ),
       runGitCapture(resolved, [...baseArgs, ...pathArgs], GIT_LOCAL_TIMEOUT_MS).then((r) => r.stdout)
     ])
   } catch (err) {

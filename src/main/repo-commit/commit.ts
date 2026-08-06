@@ -34,7 +34,9 @@ const validateRelPaths = (paths: readonly string[] | undefined): string[] => {
   const out: string[] = []
   for (const p of paths) {
     if (!REL_PATH_RE.test(p)) {
-      throw new Error(`invalid path "${p}": must be repo-relative, no leading "-" or "/", no ".." segments, no NUL/newline`)
+      throw new Error(
+        `invalid path "${p}": must be repo-relative, no leading "-" or "/", no ".." segments, no NUL/newline`
+      )
     }
     out.push(p)
   }
@@ -79,7 +81,11 @@ const readHeadSha = async (resolvedRepo: string): Promise<string> => {
  * newline characters — this matches the validators in `git-exec.ts` and
  * defends in depth against option-injection through the pathspec.
  */
-export const commitRepo = async (safeRoots: readonly string[], absPath: string, opts: CommitOptions): Promise<CommitResult> => {
+export const commitRepo = async (
+  safeRoots: readonly string[],
+  absPath: string,
+  opts: CommitOptions
+): Promise<CommitResult> => {
   const resolved = await resolveAgainstSafeRoots(absPath, safeRoots)
   const ran_at = new Date().toISOString()
 

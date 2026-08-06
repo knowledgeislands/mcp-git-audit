@@ -16,7 +16,12 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { loadConfig, SERVER_VERSION } from '../config/index.js'
-import { registerRepoAuditTools, registerRepoCommitTools, registerRepoRemotesTools, registerRepoSyncTools } from '../tools/index.js'
+import {
+  registerRepoAuditTools,
+  registerRepoCommitTools,
+  registerRepoRemotesTools,
+  registerRepoSyncTools
+} from '../tools/index.js'
 import { makeAccessGatedRegister } from '../utils/access-level.js'
 
 const config = loadConfig()
@@ -24,7 +29,9 @@ const config = loadConfig()
 console.error(`mcp-git-audit starting...`)
 console.error(`  MCP_GIT_AUDIT_SAFE_ROOTS=${config.safeRoots.join(':')}`)
 console.error(`  MCP_GIT_AUDIT_ACCESS_LEVEL=${config.accessLevel}`)
-console.error(`  MCP_GIT_AUDIT_AUDIT_LOG=${config.auditLogMode}${config.auditLogMode === 'off' ? '' : ` (path: ${config.auditLogPath})`}`)
+console.error(
+  `  MCP_GIT_AUDIT_AUDIT_LOG=${config.auditLogMode}${config.auditLogMode === 'off' ? '' : ` (path: ${config.auditLogPath})`}`
+)
 
 const server = new McpServer({
   name: 'mcp-git-audit',

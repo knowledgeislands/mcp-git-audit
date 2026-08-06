@@ -141,16 +141,25 @@ describe('setRemoteUrl', () => {
 
   it('rejects when the remote does not exist', async () => {
     const repo = await makeRepoWithRemote('set-url-missing', 'origin', 'https://example.com/foo.git')
-    await expect(setRemoteUrl(SAFE_ROOTS, repo, { remote: 'nope', url: 'https://example.com/bar.git', push: false, dry_run: false })).rejects.toThrow(
-      /does not exist/
-    )
+    await expect(
+      setRemoteUrl(SAFE_ROOTS, repo, {
+        remote: 'nope',
+        url: 'https://example.com/bar.git',
+        push: false,
+        dry_run: false
+      })
+    ).rejects.toThrow(/does not exist/)
   })
 })
 
 describe('addRemote', () => {
   it('previews on dry_run=true', async () => {
     const repo = await makeRepoWithRemote('add-dry', 'origin', 'https://example.com/origin.git')
-    const result = await addRemote(SAFE_ROOTS, repo, { remote: 'fork', url: 'https://example.com/fork.git', dry_run: true })
+    const result = await addRemote(SAFE_ROOTS, repo, {
+      remote: 'fork',
+      url: 'https://example.com/fork.git',
+      dry_run: true
+    })
     expect(result.dry_run).toBe(true)
     expect(result.after).toBeUndefined()
     const remotes = await listRemotes(SAFE_ROOTS, repo)
@@ -159,9 +168,15 @@ describe('addRemote', () => {
 
   it('creates a new remote on dry_run=false; second call rejects', async () => {
     const repo = await makeRepoWithRemote('add-real', 'origin', 'https://example.com/origin.git')
-    const result = await addRemote(SAFE_ROOTS, repo, { remote: 'fork', url: 'https://example.com/fork.git', dry_run: false })
+    const result = await addRemote(SAFE_ROOTS, repo, {
+      remote: 'fork',
+      url: 'https://example.com/fork.git',
+      dry_run: false
+    })
     expect(result.after?.fetch_url).toBe('https://example.com/fork.git')
-    await expect(addRemote(SAFE_ROOTS, repo, { remote: 'fork', url: 'https://example.com/fork2.git', dry_run: false })).rejects.toThrow(/already exists/)
+    await expect(
+      addRemote(SAFE_ROOTS, repo, { remote: 'fork', url: 'https://example.com/fork2.git', dry_run: false })
+    ).rejects.toThrow(/already exists/)
   })
 })
 
