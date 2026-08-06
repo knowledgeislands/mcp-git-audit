@@ -190,12 +190,12 @@ Read-only structured diff. Returns one entry per changed file, each with `status
 
 `max_lines` is a budget across all files. Once a file's diff would push the running total over the cap, that file's `diff` becomes `null` and its `truncated` flag is set; subsequent files are likewise null+truncated. The top-level `truncated` is the disjunction over file entries.
 
-| Name        | Type     | Default | Notes                                                                                        |
-| ----------- | -------- | ------- | -------------------------------------------------------------------------------------------- |
-| `abs_path`  | string   | —       | Absolute path to a git repo inside `MCP_GIT_AUDIT_SAFE_ROOTS`.                               |
-| `staged`    | boolean  | `false` | `false` → `git diff` (unstaged); `true` → `git diff --cached` (staged).                      |
-| `paths`     | string[] | —       | Repo-relative pathspec to narrow the diff. Leading `-` / `/` and `..` segments are rejected. |
-| `max_lines` | number   | 500     | Cap on total diff body lines across all files. Max 2000.                                     |
+| Name | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `abs_path` | string | — | Absolute path to a git repo inside `MCP_GIT_AUDIT_SAFE_ROOTS`. |
+| `staged` | boolean | `false` | `false` → `git diff` (unstaged); `true` → `git diff --cached` (staged). |
+| `paths` | string[] | — | Repo-relative pathspec to narrow the diff. Leading `-` / `/` and `..` segments are rejected. |
+| `max_lines` | number | 500 | Cap on total diff body lines across all files. Max 2000. |
 
 Output:
 
@@ -297,16 +297,16 @@ Update the working tree from a remote. Destructive — requires `MCP_GIT_AUDIT_A
 
 Update remote refs. Destructive — requires `MCP_GIT_AUDIT_ACCESS_LEVEL=destructive`. `--force` is gated behind `force_mode`, not a boolean, to make accidental non-FF pushes harder.
 
-| Name           | Type                                    | Default  | Notes                                                          |
-| -------------- | --------------------------------------- | -------- | -------------------------------------------------------------- |
-| `abs_path`     | string                                  | —        | Absolute path to a git repo inside `MCP_GIT_AUDIT_SAFE_ROOTS`. |
-| `remote`       | string                                  | `origin` |                                                                |
-| `branch`       | string                                  | current  | Required when HEAD is detached.                                |
-| `force_mode`   | `"none"` \| `"with_lease"` \| `"force"` | `"none"` | `with_lease` is safer; `force` overwrites unconditionally.     |
-| `set_upstream` | boolean                                 | `false`  | Pass `--set-upstream`.                                         |
-| `tags`         | boolean                                 | `false`  | Pass `--tags`.                                                 |
-| `delete`       | boolean                                 | `false`  | Pass `--delete` to delete the branch on the remote.            |
-| `dry_run`      | boolean                                 | `true`   | Pass `--dry-run` to git itself.                                |
+| Name | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `abs_path` | string | — | Absolute path to a git repo inside `MCP_GIT_AUDIT_SAFE_ROOTS`. |
+| `remote` | string | `origin` | — |
+| `branch` | string | current | Required when HEAD is detached. |
+| `force_mode` | `"none"` \| `"with_lease"` \| `"force"` | `"none"` | `with_lease` is safer; `force` overwrites unconditionally. |
+| `set_upstream` | boolean | `false` | Pass `--set-upstream`. |
+| `tags` | boolean | `false` | Pass `--tags`. |
+| `delete` | boolean | `false` | Pass `--delete` to delete the branch on the remote. |
+| `dry_run` | boolean | `true` | Pass `--dry-run` to git itself. |
 
 ### `git_repo_remote_add`
 
@@ -343,14 +343,14 @@ Drop a remote. Requires `MCP_GIT_AUDIT_ACCESS_LEVEL=destructive`. Working-tree f
 
 ## Configuration
 
-| Env var                             | Required | Notes                                                                            |
-| ----------------------------------- | -------- | -------------------------------------------------------------------------------- |
-| `MCP_GIT_AUDIT_SAFE_ROOTS`          | no       | Colon-separated list of paths the tool may walk.†                                |
-| `MCP_GIT_AUDIT_ACCESS_LEVEL`        | no       | Maximum tool access level to register.‡                                          |
-| `MCP_GIT_AUDIT_AUDIT_LOG`           | no       | Audit-log scope.§                                                                |
-| `MCP_GIT_AUDIT_AUDIT_LOG_PATH`      | no       | Path to the JSONL audit log. Default `~/.local/state/mcp-git-audit/audit.jsonl`. |
-| `MCP_GIT_AUDIT_AUDIT_LOG_MAX_BYTES` | no       | Size-based rotation threshold in bytes.¶                                         |
-| `MCP_GIT_AUDIT_AUDIT_LOG_KEEP`      | no       | Number of rotated audit-log files to retain. Default `5`.                        |
+| Env var | Required | Notes |
+| --- | --- | --- |
+| `MCP_GIT_AUDIT_SAFE_ROOTS` | no | Colon-separated list of paths the tool may walk.† |
+| `MCP_GIT_AUDIT_ACCESS_LEVEL` | no | Maximum tool access level to register.‡ |
+| `MCP_GIT_AUDIT_AUDIT_LOG` | no | Audit-log scope.§ |
+| `MCP_GIT_AUDIT_AUDIT_LOG_PATH` | no | Path to the JSONL audit log. Default `~/.local/state/mcp-git-audit/audit.jsonl`. |
+| `MCP_GIT_AUDIT_AUDIT_LOG_MAX_BYTES` | no | Size-based rotation threshold in bytes.¶ |
+| `MCP_GIT_AUDIT_AUDIT_LOG_KEEP` | no | Number of rotated audit-log files to retain. Default `5`. |
 
 † Absolute or `~/...` paths. May list several. Defaults to `~` (the user's home directory) when unset or empty.
 
