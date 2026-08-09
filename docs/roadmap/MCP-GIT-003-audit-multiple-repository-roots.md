@@ -1,6 +1,6 @@
 ---
-id: MCP-GIT-TOOL-001
-title: Support worktree pointers
+id: MCP-GIT-003
+title: Audit multiple repositories
 theme: tool-surface
 horizon: future
 status: draft
@@ -12,11 +12,11 @@ baseline-ref: null
 
 ## Goal
 
-Achieve the stated outcome: Support worktree-pointer Git files.
+Achieve the stated outcome: Audit multiple repository roots in one call.
 
 ## Context
 
-Support worktree-pointer `.git` files; the current implementation handles only `.git` directories.
+Add multi-root audit in a single call; multi-root is currently configuration-only and each request handles one root.
 
 ## Boundary
 
