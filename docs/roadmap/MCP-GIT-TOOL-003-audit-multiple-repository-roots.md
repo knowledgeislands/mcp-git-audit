@@ -1,5 +1,6 @@
 ---
-id: MCP-GIT-003
+id: MCP-GIT-TOOL-003
+area: TOOL
 title: Audit multiple repositories
 theme: tool-surface
 horizon: future

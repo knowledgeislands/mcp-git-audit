@@ -1,5 +1,6 @@
 ---
-id: MCP-GIT-001
+id: MCP-GIT-TOOL-001
+area: TOOL
 title: Support worktree pointers
 theme: tool-surface
 horizon: future

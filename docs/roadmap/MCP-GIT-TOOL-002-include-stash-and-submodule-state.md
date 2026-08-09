@@ -1,5 +1,6 @@
 ---
-id: MCP-GIT-002
+id: MCP-GIT-TOOL-002
+area: TOOL
 title: Include stash, submodule state
 theme: tool-surface
 horizon: future
