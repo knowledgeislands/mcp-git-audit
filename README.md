@@ -391,7 +391,7 @@ bun run test:coverage             # vitest + v8 coverage
 bun run ki:lint:types                # tsc --noEmit
 bun run ki:lint:check                # Biome lint + format check
 bun run ki:lint:fix                  # Biome auto-fix
-bun run ki:lint:md                   # prettier + markdownlint for *.md
+ki repo audit --skill ki-authoring --repo .  # rumdl check for authored Markdown
 bun run build                     # emit dist/
 bun run ki:server:mcp:start          # build + run from dist/ under node
 ```
