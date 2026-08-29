@@ -4,10 +4,10 @@ title: Pilot MCP SDK v2
 area: TOOL
 theme: tool-surface
 horizon: next
-status: ready
+status: in-progress
 blocks: []
 blocked_by: []
-baseline_ref: null
+baseline_ref: 6ca2245e13cfc87b8e475a7adb0e89bfe2eb0d5a
 ---
 
 ## Goal
