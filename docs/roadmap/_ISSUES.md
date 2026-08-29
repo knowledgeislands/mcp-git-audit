@@ -1,5 +1,5 @@
 ---
-areas: { FND: 2, TOOL: 4 }
+areas: { FND: 2, TOOL: 5 }
 ---
 
 # Roadmap issue ledger
@@ -7,4 +7,4 @@ areas: { FND: 2, TOOL: 4 }
 This ledger reserves fixed issuing-area namespaces. Allocate the next work item in its area as one greater than that area's high-water mark; never lower a value or reuse an issued number after a record is pruned. Areas are not mutable themes or groups.
 
 - `FND` reserves through `002`.
-- `TOOL` reserves through `004`.
+- `TOOL` reserves through `005`.
