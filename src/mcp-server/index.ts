@@ -13,8 +13,8 @@
  *                               Any `root` argument must equal or live inside one of these.
  */
 
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
+import { McpServer } from '@modelcontextprotocol/server'
+import { serveStdio } from '@modelcontextprotocol/server/stdio'
 import { loadConfig, SERVER_VERSION } from '../config/index.js'
 import {
   registerRepoAuditTools,
@@ -33,29 +33,33 @@ console.error(
   `  MCP_GIT_AUDIT_AUDIT_LOG=${config.auditLogMode}${config.auditLogMode === 'off' ? '' : ` (path: ${config.auditLogPath})`}`
 )
 
-const server = new McpServer({
-  name: 'mcp-git-audit',
-  version: SERVER_VERSION
-})
-server.registerTool = makeAccessGatedRegister(server, config.accessLevel, {
-  mode: config.auditLogMode,
-  path: config.auditLogPath,
-  maxBytes: config.auditLogMaxBytes,
-  keep: config.auditLogKeep
-})
+const createServer = (): McpServer => {
+  const server = new McpServer({
+    name: 'mcp-git-audit',
+    version: SERVER_VERSION
+  })
+  server.registerTool = makeAccessGatedRegister(server, config.accessLevel, {
+    mode: config.auditLogMode,
+    path: config.auditLogPath,
+    maxBytes: config.auditLogMaxBytes,
+    keep: config.auditLogKeep
+  })
 
-registerRepoAuditTools(server, config)
-registerRepoSyncTools(server, config)
-registerRepoRemotesTools(server, config)
-registerRepoCommitTools(server, config)
-
-const main = async (): Promise<void> => {
-  const transport = new StdioServerTransport()
-  await server.connect(transport)
-  console.error(`mcp-git-audit ready`)
+  registerRepoAuditTools(server, config)
+  registerRepoSyncTools(server, config)
+  registerRepoRemotesTools(server, config)
+  registerRepoCommitTools(server, config)
+  return server
 }
 
-main().catch((err) => {
-  console.error('mcp-git-audit fatal:', err)
-  process.exit(1)
+const handle = serveStdio(createServer, {
+  legacy: 'serve',
+  onerror: (error) => console.error('mcp-git-audit stdio error:', error)
+})
+
+console.error('mcp-git-audit ready')
+
+process.on('SIGINT', async () => {
+  await handle.close()
+  process.exit(0)
 })
