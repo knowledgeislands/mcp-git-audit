@@ -53,3 +53,11 @@ The record must reach `awaiting-review` with its six-part review packet and then
 ## Run ledger
 
 <!-- ki-batch-run: MCP-GIT-BATCH-001-RUN-001 f6abd00c8db4152ce6c348cf9658dd45a713a6fa83c83010cc2c1c81fb7e3054 -->
+
+### `MCP-GIT-TOOL-005`
+
+- **Result:** `stopped` at the mandatory verification gate; no acceptance or closure occurred.
+- **Checkpoint:** Isolated branch `work/mcp-sdk-v2-pilot` commit `a94129a` contains the SDK v2 package, stdio, result-helper, and wire-smoke migration.
+- **Passing evidence:** 161 tests at 100% coverage, TypeScript, build, modern discovery, legacy fallback, malformed arguments, result-envelope validation, MCP audit, roadmap audit, and authoring audit.
+- **Stop evidence:** `ki-engineering` reports five unclaimed MCP-owned scripts and the repository's legacy Vitest `coverage/` default. The first belongs to the Harness `ki-repo-mcp` catalogue; the second is a local repository remedial.
+- **Next run:** Resume only after the Harness owner publishes exact MCP script claims; then fix the local report path, rebase or merge the isolated branch, and rerun the full gate.
