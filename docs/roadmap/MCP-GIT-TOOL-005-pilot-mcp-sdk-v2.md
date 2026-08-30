@@ -4,7 +4,7 @@ title: Pilot MCP SDK v2
 area: TOOL
 theme: tool-surface
 horizon: next
-status: awaiting-review
+status: done
 blocks: []
 blocked_by: []
 baseline_ref: 6ca2245e13cfc87b8e475a7adb0e89bfe2eb0d5a
@@ -105,6 +105,10 @@ The migration is viable and stable without changing tool names, annotations, acc
 ### Mini recap
 
 The SDK-v2 delta is proven on one representative stdio server with modern and legacy paths, complete-result validation, full coverage, and clean governance gates. It is ready to inform the Harness rollout decision without generalising policy locally.
+
+## Done
+
+Accepted at `2026-08-30T00:01:07Z` through closure authority bound to `MCP-GIT-BATCH-002`. Delivery branch commit `c7a7342` was merged to `main` by `ffd9ec8235289d48c7c30648b2b05ce2e692e553`. The six-part review packet, 161-test 100%-coverage suite, TypeScript, Biome, build, modern and legacy stdio smoke, MCP audit, engineering audit, roadmap audit, and authoring audit were clean before closure. No push, release, publication, remote transport, real user-root Git action, or sibling write occurred.
 
 ## Discussion
 
