@@ -4,7 +4,7 @@ title: Pilot MCP SDK v2
 area: TOOL
 theme: tool-surface
 horizon: next
-status: in-progress
+status: awaiting-review
 blocks: []
 blocked_by: []
 baseline_ref: 6ca2245e13cfc87b8e475a7adb0e89bfe2eb0d5a
@@ -30,14 +30,14 @@ The repository is on SDK `1.30.x`, exposes a Node-hosted stdio MCP, and has focu
 
 ## Steps
 
-- [ ] Record the exact current and candidate SDK package versions and the 2026-07-28 protocol revision.
-- [ ] Migrate one isolated branch or local worktree to the SDK v2 package family and its supported stdio entry point.
-- [ ] Update every result helper and tool response to the required `resultType` envelope without weakening error or annotation semantics.
-- [ ] Implement `server/discover` with supported versions, capabilities, identity, and cache behaviour grounded in the specification.
-- [ ] Add CLI-level MCP fixtures for discovery, result envelopes, stdio start-up, malformed requests, and any documented legacy fallback.
-- [ ] Compare the resulting diff and runtime behaviour with v1, explicitly recording removed session, initialization, or transport assumptions.
-- [ ] Run the repository's full coverage, type, format, build, smoke, and focused governance gates.
-- [ ] Return the verified migration delta to `KI-HARNESS-GOV-006`; do not generalise the pilot into fleet policy locally.
+- [x] Record the exact current and candidate SDK package versions and the 2026-07-28 protocol revision.
+- [x] Migrate one isolated branch or local worktree to the SDK v2 package family and its supported stdio entry point.
+- [x] Update every result helper and tool response to the required `resultType` envelope without weakening error or annotation semantics.
+- [x] Implement `server/discover` with supported versions, capabilities, identity, and cache behaviour grounded in the specification.
+- [x] Add CLI-level MCP fixtures for discovery, result envelopes, stdio start-up, malformed requests, and any documented legacy fallback.
+- [x] Compare the resulting diff and runtime behaviour with v1, explicitly recording removed session, initialization, or transport assumptions.
+- [x] Run the repository's full coverage, type, format, build, smoke, and focused governance gates.
+- [x] Return the verified migration delta to `KI-HARNESS-GOV-006`; do not generalise the pilot into fleet policy locally.
 
 ## Files touched
 
@@ -79,6 +79,32 @@ Update the README only for a supported invocation or compatibility change observ
 ### Roadmap
 
 This item supplies evidence to `KI-HARNESS-GOV-006` and creates no sibling migration records.
+
+## Review
+
+### Delivered
+
+Against immutable baseline `6ca2245e13cfc87b8e475a7adb0e89bfe2eb0d5a`, migrated the representative Node-hosted stdio server from `@modelcontextprotocol/sdk` `1.30.0` to released `@modelcontextprotocol/server` and `@modelcontextprotocol/client` `2.0.0` packages on the isolated `work/mcp-sdk-v2-pilot` branch.
+
+### Summary of changes
+
+The server now uses the supported `serveStdio` factory, advertises and negotiates protocol revision `2026-07-28` through SDK-owned `server/discover`, and deliberately retains the 2025-era initialize fallback with `legacy: 'serve'`. Shared success and error helpers return `resultType: 'complete'`. The smoke client uses the v2 package, proves modern discovery metadata, capabilities, identity, malformed-argument rejection, a valid complete wire result, the unchanged 12-tool surface, and a separate legacy connection. Vitest reports now live under `reports/coverage`.
+
+### Verification
+
+All 161 tests pass at 100% statements, branches, functions, and lines coverage. TypeScript, Biome, build, and stdio smoke pass. `ki-repo-mcp`, `ki-engineering`, roadmap, and authoring audits pass. The engineering audit was rerun sequentially after an initial concurrent double-coverage invocation raced the same temporary directory; the isolated rerun is clean.
+
+### Outstanding concerns
+
+Biome reports an informational schema URL at `2.5.7` while the CLI is `2.5.10`; it does not fail formatting and is unrelated to the protocol pilot. The pilot intentionally keeps legacy stdio service for fleet transition evidence. Choosing when the house standard requires modern-only behavior remains `KI-HARNESS-GOV-006` policy, not a local server decision.
+
+### Post-change review
+
+The migration is viable and stable without changing tool names, annotations, access gates, filesystem/Git safeguards, operator invocation, remote transport, or public tool behavior. The v2 SDK owns discovery, protocol stamping, server identity metadata, and era negotiation; local code owns only server construction and its result helper contract.
+
+### Mini recap
+
+The SDK-v2 delta is proven on one representative stdio server with modern and legacy paths, complete-result validation, full coverage, and clean governance gates. It is ready to inform the Harness rollout decision without generalising policy locally.
 
 ## Discussion
 
