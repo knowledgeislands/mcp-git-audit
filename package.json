@@ -22,7 +22,7 @@
     "knip": "^6.32.2",
     "lint-staged": "^17.3.0",
     "mcporter": "^0.13.7",
-    "rumdl": "^0.2.60",
+    "rumdl": "^0.2.62",
     "syncpack": "^15.3.3",
     "typescript": "^7.0.2",
     "vitest": "^4.1.11"
