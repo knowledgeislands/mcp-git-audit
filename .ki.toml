@@ -1,6 +1,10 @@
 # Knowledge Islands repository configuration.
 # Its presence declares conformance with the Knowledge Islands repository standard.
 
+# -----------------------------------------------------------------------------
+# Foundation
+# -----------------------------------------------------------------------------
+
 [repo]
 harnesses = ["knowledgeislands/ki-agentic-harness"]
 
@@ -14,16 +18,27 @@ visibility = "public"
 
 [skills.ki-authoring]
 
-[skills.ki-engineering]
+# -----------------------------------------------------------------------------
+# Repository shape
+# -----------------------------------------------------------------------------
 
 [skills.ki-repo-project]
 
 [skills.ki-repo-mcp]
 
-[skills.ki-trades]
+# -----------------------------------------------------------------------------
+# Governance runtime
+# -----------------------------------------------------------------------------
 
-[skills.ki-trades.routes."knowledgeislands/ki-agentic-harness"]
-import = ["knowledge"]
+[skills.ki-engineering]
+
+[skills.ki-decision-records]
+
+# -----------------------------------------------------------------------------
+# Change management
+# -----------------------------------------------------------------------------
+
+[skills.ki-git]
 
 [skills.ki-work]
 adapter = "roadmap"
@@ -43,9 +58,14 @@ TOOL = "tool-surface"
 
 [skills.ki-tokenomics-codex]
 
-[skills.ki-git]
+# -----------------------------------------------------------------------------
+# Relationships
+# -----------------------------------------------------------------------------
 
-[skills.ki-decision-records]
+[skills.ki-trades]
+
+[skills.ki-trades.routes."knowledgeislands/ki-agentic-harness"]
+import = ["knowledge"]
 
 [skills.ki-agora]
 
