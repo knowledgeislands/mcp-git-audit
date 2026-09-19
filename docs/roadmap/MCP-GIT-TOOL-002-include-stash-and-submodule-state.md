@@ -5,7 +5,6 @@ title: Include stash, submodule state
 theme: tool-surface
 horizon: future
 status: draft
-candidate: true
 blocks: []
 blocked_by: []
 baseline_ref: null
