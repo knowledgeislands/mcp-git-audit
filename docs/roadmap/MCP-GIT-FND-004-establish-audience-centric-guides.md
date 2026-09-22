@@ -4,13 +4,13 @@ title: Establish audience-centric guides
 area: FND
 theme: foundation-tooling
 horizon: now
-status: ready
+status: awaiting-review
 blocks: []
 blocked_by: []
 transferred_from: ki-website
-baseline_ref: null
+baseline_ref: 12e84b28f9a6791e1fbc0687cab91bdc31c87793
 created_at: 2026-09-21T15:44:00Z
-updated_at: 2026-09-22T06:53:20Z
+updated_at: 2026-09-22T07:04:15Z
 ---
 
 ## Goal
@@ -39,18 +39,18 @@ There is no `docs/guides/` directory and `.ki.toml` declares no `[skills.ki-guid
 
 ## Steps
 
-- [ ] Name the audiences as `user` and `developer`, and record why no `operator` split is written.
-- [ ] Create `docs/guides/README.md` as the collection index, routing by audience and nothing else.
-- [ ] Create `docs/guides/user/README.md` and `docs/guides/developer/README.md` as audience entry points.
-- [ ] Write `docs/guides/user/installing-the-server.md`: install, client configuration, safe roots, first verification.
-- [ ] Write `docs/guides/user/auditing-repositories.md`: the scan, audit, detail, and diff workflow and its caching and truncation behaviour.
-- [ ] Write `docs/guides/user/granting-write-access.md`: access levels, `dry_run`, `force_mode`, and the audit log.
-- [ ] Write `docs/guides/user/troubleshooting.md`: rejected roots, missing tools, timeouts, authentication failures, per-repository errors.
-- [ ] Write `docs/guides/developer/working-on-the-code.md`: setup, dev loop, and gates, linking `CONTRIBUTING.md` rather than restating it.
-- [ ] Write `docs/guides/developer/architecture.md`: layering, config injection, the access gate, and the path-safety invariants.
-- [ ] Reduce `README.md` to orientation: what the server is, what it can do, its safety posture, and links into the guides.
-- [ ] Declare `[skills.ki-guides]` in `.ki.toml`.
-- [ ] Run the guides and authoring audits and repair what they report.
+- [x] Name the audiences as `user` and `developer`, and record why no `operator` split is written.
+- [x] Create `docs/guides/README.md` as the collection index, routing by audience and nothing else.
+- [x] Create `docs/guides/user/README.md` and `docs/guides/developer/README.md` as audience entry points.
+- [x] Write `docs/guides/user/installing-the-server.md`: install, client configuration, safe roots, first verification.
+- [x] Write `docs/guides/user/auditing-repositories.md`: the scan, audit, detail, and diff workflow and its caching and truncation behaviour.
+- [x] Write `docs/guides/user/granting-write-access.md`: access levels, `dry_run`, `force_mode`, and the audit log.
+- [x] Write `docs/guides/user/troubleshooting.md`: rejected roots, missing tools, timeouts, authentication failures, per-repository errors.
+- [x] Write `docs/guides/developer/working-on-the-code.md`: setup, dev loop, and gates, linking `CONTRIBUTING.md` rather than restating it.
+- [x] Write `docs/guides/developer/architecture.md`: layering, config injection, the access gate, and the path-safety invariants.
+- [x] Reduce `README.md` to orientation: what the server is, what it can do, its safety posture, and links into the guides.
+- [x] Declare `[skills.ki-guides]` in `.ki.toml`.
+- [x] Run the guides and authoring audits and repair what they report.
 
 ## Files touched
 
@@ -81,6 +81,70 @@ This item is entirely guide impact. It creates the collection, its audience dire
 ### Roadmap
 
 Two follow-on captures are expected rather than none, and neither is executed here. The first is a `ki-specs` corpus for the tool surface, which the Specifications note above routes. The second is a sweep of the in-repository cross-references that point at the README for installation and configuration — `AGENTS.md` ("Keep user-facing installation, configuration, and tool reference in README") and `CLAUDE.md` ("The user-facing tool surface, install/config, and Claude Desktop setup live in README.md") — both of which become wrong the moment this item lands. Those files sit outside this item's approved file scope, so capture is a separate act by `ki-next`.
+
+## Review
+
+### Delivered
+
+The approved boundary: create `docs/guides/` as an audience-grouped collection, move the README's how-to material into it, declare `[skills.ki-guides]`, and leave the README orienting. Excluded, as approved: any change to `src/`, `package.json`, or the server's behaviour; any new specification corpus; and any edit outside `docs/guides/`, `README.md`, and `.ki.toml`.
+
+Immutable baseline: `12e84b28f9a6791e1fbc0687cab91bdc31c87793`.
+
+Resulting evidence: nine new Markdown files under `docs/guides/`, a README reduced from 401 lines to 61, one added `.ki.toml` block, and a full repository audit that now passes at sixteen declared skills rather than fifteen.
+
+### Summary of changes
+
+New — `docs/guides/README.md` (collection index), `docs/guides/user/README.md`, `docs/guides/user/installing-the-server.md`, `docs/guides/user/auditing-repositories.md`, `docs/guides/user/granting-write-access.md`, `docs/guides/user/troubleshooting.md`, `docs/guides/developer/README.md`, `docs/guides/developer/architecture.md`, `docs/guides/developer/working-on-the-code.md`.
+
+Changed — `README.md` (401 lines to 61), `.ki.toml` (`[skills.ki-guides]` added).
+
+Four material decisions, each argued in Discussion or below. The audiences are `user` and `developer`, with no `operator` tier. The README keeps a twelve-row capability table and loses the per-tool schema reference entirely, rather than relocating it into a guide. The behavioural caveats embedded in that reference — scan caching, the `max_lines` budget and its cascading truncation, `git_repo_detail` degrading into an `error` field, the `git fetch --dry-run` approximation behind `git_repo_pull`, the absence of `--amend` — were carried into the user guides that need them. And the npm badge was removed from the README, because the registry returns 404 for `@knowledgeislands/mcp-git-audit`: the package is not published, so the badge advertised an install route that does not exist. The install guide says so explicitly.
+
+Three factual corrections were made while writing, all of which contradict the material being replaced. The README claimed every mutating tool defaults `dry_run` to `true`; `git_repo_fetch` defaults it to `false`, and the new table footnote says so. The README's development block listed `bun run ki:lint:types`, `ki:lint:check`, and `ki:lint:fix`, none of which exist in `package.json` — the gates are now `ki repo audit`, `bun run test`, `bun run test:coverage`, and `bun run ki:test:smoke`, which is what CI actually runs and what the developer guide documents. `CONTRIBUTING.md` still carries the same stale script names and is outside this item's file scope, so the developer guide flags the discrepancy in a note rather than silently disagreeing with it.
+
+One approved deviation, small: the README's tool table heading is `## Available tools` rather than the `## What it can do` first drafted, because `CLAUDE.md` links `./README.md#available-tools` and the Markdown gate resolves link fragments. Renaming the heading kept the fix inside this item's file scope.
+
+### Verification
+
+`ki repo audit --skill ki-guides --concise --progress never` — `summary: KI REPO AUDIT on mcp-git-audit PASS · 1 skill`, exit 0.
+
+`ki repo audit --skill ki-authoring --concise --progress never` — `summary: KI REPO AUDIT on mcp-git-audit PASS · 1 skill`, exit 0. It failed twice before passing: once on `MD049` for `*emphasis*` in this record, and once on `MD051` for the `CLAUDE.md` link fragment described above. Both were repaired within scope.
+
+`ki repo audit --concise --progress never` — `summary: KI REPO AUDIT on mcp-git-audit PASS · 16 skills`, exit 0, against a baseline of `PASS · 15 skills`.
+
+Every relative link in the nine new files and the rewritten README was resolved against the filesystem; none dangle. `MD057` is disabled in `.rumdl.toml`, so that check was run separately rather than relied upon from the gate.
+
+The test suite was not run. No code, test, or configuration affecting behaviour was touched; the change is Markdown and one TOML declaration.
+
+### Outstanding concerns
+
+Three, none blocking.
+
+**Deleted reference material.** Roughly 300 lines of per-tool input and output tables were removed rather than relocated. The argument is in the `### The tool inventory` topic, and the material remains in git history at the baseline commit. This is the part of the change most worth a reviewer's own judgement, because the decision is cheap to reverse now and expensive to revisit later.
+
+**Two files now contradict the README.** `AGENTS.md` instructs that user-facing installation, configuration, and tool reference be kept in the README; `CLAUDE.md` states that install, config, and Claude Desktop setup live there. Both are outside this item's approved file scope and both are now wrong. `CLAUDE.md` additionally says the README tabulates tools "with purposes and I/O shapes" — the purposes remain, the I/O shapes do not. The Roadmap impact note routes this.
+
+**No behaviour contract.** With the schema tables gone, this repository's only account of what its tools accept and return is the code, its tests, and the live server. That is honest but thin, and it is the `ki-specs` gap already routed.
+
+### Post-change review
+
+The goal holds. A reader arriving with a task now lands on an index that routes by who they are, and every guide states an outcome, the conditions, and what to do when it fails. The prompting question in Discussion — whether someone who has never opened this repository can install it, run it, and recover from its common failures without reading source — is answered by the four user guides, and answering it honestly is what surfaced the unpublished package and the stale script names.
+
+Scope held. Nine new files, two modified, all three within the declared `Files touched`. No file under `src/`, no `package.json`, no test.
+
+Regression risk is low and confined to documentation. The single mechanical coupling between this change and the rest of the repository was the `CLAUDE.md` link fragment, which the Markdown gate caught and which is now satisfied. Nothing in the build, the published package, or the server's behaviour is touched.
+
+Acceptance readiness: ready, with the deleted schema reference as the one judgement a reviewer should make for themselves rather than inherit.
+
+### Mini recap
+
+Delivered an audience-centric guide collection — `user` and `developer`, four user guides and two developer guides plus three indexes — and reduced the README to orientation, declaring `[skills.ki-guides]` so the shape is gated rather than conventional.
+
+Verified against the three gates the item named; all pass, and the full audit moved from fifteen skills to sixteen.
+
+Concerns: the removed per-tool schema reference is a deliberate deletion a reviewer should confirm; `AGENTS.md` and `CLAUDE.md` now point at a README that no longer holds installation and configuration; the repository has no tracked behaviour contract for its tool surface.
+
+Learning worth routing, not promoted here: the npm badge advertised a package that is not on the registry, and both `README.md` and `CONTRIBUTING.md` listed `bun run ki:lint:*` scripts that `package.json` does not define. Documentation that nobody executes drifts silently; writing a guide that had to be true is what found both.
 
 ## Discussion
 
