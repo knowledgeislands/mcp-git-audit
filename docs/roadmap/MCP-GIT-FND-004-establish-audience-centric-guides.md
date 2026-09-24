@@ -10,7 +10,7 @@ blocked_by: []
 transferred_from: ki-website
 baseline_ref: 12e84b28f9a6791e1fbc0687cab91bdc31c87793
 created_at: 2026-09-21T15:44:00Z
-updated_at: 2026-09-22T07:04:15Z
+updated_at: 2026-09-24T09:14:00Z
 ---
 
 ## Goal
@@ -25,7 +25,7 @@ KI Website now declares, for every page it publishes under `apps/site/src/guidan
 
 That is a pull, not an obligation: KI Website derives, it does not own. This repository decides what its guides say and when they change.
 
-Separately, `ki-guides` is being asked to require audience directories under `docs/guides/` rather than permitting a flat collection (`ki-agentic-harness` `KI-HARNESS-GOV-083`). If that lands, this repository's collection has to satisfy it.
+Separately, `KI-HARNESS-GOV-083` has clarified `ki-guides`: audience directories are recommended when stable reader groups make a collection easier to navigate, while flat and mixed collections remain valid. This item therefore stands on this repository's own readers and routing needs, not a universal Harness requirement.
 
 ## Boundary
 
@@ -62,7 +62,7 @@ There is no `docs/guides/` directory and `.ki.toml` declares no `[skills.ki-guid
 
 ## Dependencies / blocks
 
-Nothing blocks this. `KI-HARNESS-GOV-083` in `ki-agentic-harness` proposes making audience directories a `ki-guides` requirement: if it lands first this collection satisfies it by construction, and if it lands later this collection already conforms. KI Website intends to derive public guidance from these guides and cite them at a pinned ref, but it derives rather than owns and its schedule does not gate this work.
+Nothing blocks this. `KI-HARNESS-GOV-083` is advisory rather than a universal migration requirement; this item's audience grouping remains justified by the repository-local reader distinctions described above. KI Website intends to derive public guidance from these guides and cite them at a pinned ref, but it derives rather than owns and its schedule does not gate this work.
 
 ## Documentation impact
 
@@ -92,7 +92,7 @@ Immutable baseline: `12e84b28f9a6791e1fbc0687cab91bdc31c87793`.
 
 Resulting evidence: nine new Markdown files under `docs/guides/`, a README reduced from 401 lines to 61, one added `.ki.toml` block, and a full repository audit that now passes at sixteen declared skills rather than fifteen.
 
-### Summary of changes
+### Change Summary
 
 New — `docs/guides/README.md` (collection index), `docs/guides/user/README.md`, `docs/guides/user/installing-the-server.md`, `docs/guides/user/auditing-repositories.md`, `docs/guides/user/granting-write-access.md`, `docs/guides/user/troubleshooting.md`, `docs/guides/developer/README.md`, `docs/guides/developer/architecture.md`, `docs/guides/developer/working-on-the-code.md`.
 
