@@ -13,7 +13,7 @@ harnesses = ["knowledgeislands/ki-agentic-harness"]
 [skills.ki-repo]
 repository = "https://github.com/knowledgeislands/mcp-git-audit"
 title = "mcp-git-audit"
-description = "MCP for branch, working-tree, and upstream status across local git repositories."
+description = "MCP for auditing and opt-in maintenance of branch, working-tree, and upstream state across local Git repositories."
 repo_code = "MCP-GIT"
 supported_runtimes = ["claude-code", "claude-desktop", "chatgpt-codex"]
 visibility = "public"
