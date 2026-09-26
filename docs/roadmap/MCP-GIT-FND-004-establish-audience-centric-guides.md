@@ -10,7 +10,7 @@ blocked_by: []
 transferred_from: ki-website
 baseline_ref: 12e84b28f9a6791e1fbc0687cab91bdc31c87793
 created_at: 2026-09-21T15:44:00Z
-updated_at: 2026-09-24T09:14:00Z
+updated_at: 2026-09-26T17:32:40Z
 ---
 
 ## Goal
@@ -86,6 +86,8 @@ Two follow-on captures are expected rather than none, and neither is executed he
 
 ### Delivered
 
+A subsequent `GUIDE-4` review found that four guides still linked prose documents outside `docs/guides/`. The collection now routes practical work to sibling guides, names repository policy and work records in prose, and keeps each procedure complete without importing another authority.
+
 The approved boundary: create `docs/guides/` as an audience-grouped collection, move the README's how-to material into it, declare `[skills.ki-guides]`, and leave the README orienting. Excluded, as approved: any change to `src/`, `package.json`, or the server's behaviour; any new specification corpus; and any edit outside `docs/guides/`, `README.md`, and `.ki.toml`.
 
 Immutable baseline: `12e84b28f9a6791e1fbc0687cab91bdc31c87793`.
@@ -93,6 +95,8 @@ Immutable baseline: `12e84b28f9a6791e1fbc0687cab91bdc31c87793`.
 Resulting evidence: nine new Markdown files under `docs/guides/`, a README reduced from 401 lines to 61, one added `.ki.toml` block, and a full repository audit that now passes at sixteen declared skills rather than fifteen.
 
 ### Change Summary
+
+The review correction changed `docs/guides/developer/README.md`, `working-on-the-code.md`, `docs/guides/user/granting-write-access.md`, and `troubleshooting.md`. It removed six escaping document links without changing the server, its security boundary, or its roadmap state.
 
 New — `docs/guides/README.md` (collection index), `docs/guides/user/README.md`, `docs/guides/user/installing-the-server.md`, `docs/guides/user/auditing-repositories.md`, `docs/guides/user/granting-write-access.md`, `docs/guides/user/troubleshooting.md`, `docs/guides/developer/README.md`, `docs/guides/developer/architecture.md`, `docs/guides/developer/working-on-the-code.md`.
 
@@ -105,6 +109,11 @@ Three factual corrections were made while writing, all of which contradict the m
 One approved deviation, small: the README's tool table heading is `## Available tools` rather than the `## What it can do` first drafted, because `CLAUDE.md` links `./README.md#available-tools` and the Markdown gate resolves link fragments. Renaming the heading kept the fix inside this item's file scope.
 
 ### Verification
+
+- `ki repo audit --skill ki-guides --repo . --concise --progress never` - PASS after the review correction, including `GUIDE-4`.
+- `rumdl check` over the five touched Markdown files - PASS after formatting once.
+- `ki repo audit --skill ki-authoring --repo . --concise --progress never` - `FAIL=0 WARN=1`; the remaining `OWN-1` warning is the pre-existing drift in `.rumdl.toml`.
+- `ki repo audit --repo . --concise --progress never` - `PASS=13 WARN=2 FAIL=1`; no guide failure remains, while `TEST-5` cannot write Vitest's `node_modules/.vite-temp` file in the audit sandbox and `OWN-1` plus development-checkout `DIST-1` remain warnings.
 
 `ki repo audit --skill ki-guides --concise --progress never` — `summary: KI REPO AUDIT on mcp-git-audit PASS · 1 skill`, exit 0.
 
@@ -128,6 +137,8 @@ Three, none blocking.
 
 ### Post-change review
 
+The correction preserves every operational warning and contribution gate while removing dependencies on prose outside the collection. Root policy remains authoritative and is named rather than duplicated.
+
 The goal holds. A reader arriving with a task now lands on an index that routes by who they are, and every guide states an outcome, the conditions, and what to do when it fails. The prompting question in Discussion — whether someone who has never opened this repository can install it, run it, and recover from its common failures without reading source — is answered by the four user guides, and answering it honestly is what surfaced the unpublished package and the stale script names.
 
 Scope held. Nine new files, two modified, all three within the declared `Files touched`. No file under `src/`, no `package.json`, no test.
@@ -138,9 +149,11 @@ Acceptance readiness: ready, with the deleted schema reference as the one judgem
 
 ### Mini recap
 
+The follow-up review removed six links from guides to prose documents outside the collection, retained the needed instructions locally, and restored the guide boundary without accepting this work item.
+
 Delivered an audience-centric guide collection — `user` and `developer`, four user guides and two developer guides plus three indexes — and reduced the README to orientation, declaring `[skills.ki-guides]` so the shape is gated rather than conventional.
 
-Verified against the three gates the item named; all pass, and the full audit moved from fifteen skills to sixteen.
+The initial delivery verification passed and moved the full audit from fifteen skills to sixteen. The follow-up evidence above records the current audit-environment failure and template warnings.
 
 Concerns: the removed per-tool schema reference is a deliberate deletion a reviewer should confirm; `AGENTS.md` and `CLAUDE.md` now point at a README that no longer holds installation and configuration; the repository has no tracked behaviour contract for its tool surface.
 

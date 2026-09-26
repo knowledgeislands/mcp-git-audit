@@ -9,7 +9,7 @@ Running the server against your own repositories is a different job and lives in
 - [Architecture](architecture.md) — the layers, which way configuration flows, how the access gate is driven, and the safety invariants every change has to preserve.
 - [Working on the code](working-on-the-code.md) — setup, the dev loop, the gates a change must clear, and how to add a tool without bypassing anything.
 
-[`CONTRIBUTING.md`](../../../CONTRIBUTING.md) holds the contribution contract — commit conventions and what CI expects — and is not restated here.
+[Working on the code](working-on-the-code.md) gives the practical loop and gates. `CONTRIBUTING.md` remains the repository contribution contract for commit and pull-request conventions.
 
 ## What constrains every change
 
@@ -27,8 +27,8 @@ Three things bind any contribution to this repository, and none of them are styl
 | ----------------------------------------- | --------------------------------------------------------- |
 | How is the code arranged, and why?        | [Architecture](architecture.md)                           |
 | What do I run, and what must pass?        | [Working on the code](working-on-the-code.md)             |
-| What are the commit and PR expectations?  | [`CONTRIBUTING.md`](../../../CONTRIBUTING.md)             |
-| How do I report a vulnerability?          | [`SECURITY.md`](../../../SECURITY.md)                     |
-| What is planned or in flight?             | [The roadmap](../../roadmap/)                             |
+| What are the commit and PR expectations?  | [Working on the code](working-on-the-code.md)             |
+| How do I report a vulnerability?          | The private route in `SECURITY.md`                        |
+| What is planned or in flight?             | Work records under `docs/roadmap/`                        |
 
 This repository keeps no specification corpus, so the behaviour contract for the tool surface is the code and its tests. Treat a test that pins an output shape as the contract it is: downstream consumers read these results.

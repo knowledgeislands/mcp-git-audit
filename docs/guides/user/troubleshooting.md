@@ -67,4 +67,4 @@ If it is still empty at `all`, remember that log-write failures are swallowed to
 
 ## Something else
 
-If the behaviour you are seeing is not covered here and is not obviously one of these safeguards, it is worth raising — open an issue with the tool name, the arguments, and the error text. [`SECURITY.md`](../../../SECURITY.md) covers how to report anything with a security dimension privately instead.
+If the behaviour you are seeing is not covered here and is not obviously one of these safeguards, it is worth raising — open an issue with the tool name, the arguments, and the error text. `SECURITY.md` covers how to report anything with a security dimension privately instead.

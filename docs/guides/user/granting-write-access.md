@@ -59,7 +59,7 @@ All four destructive tools default to `dry_run: true`.
 
 **`git_repo_commit`** stages files and writes a commit. Its dry run is worth understanding precisely: the staging step runs for real, and then `git commit --dry-run` reports what would be committed without writing an object or moving HEAD. Staging is local, reversible index state, and including it in the preview is deliberate — the preview has to reflect what would actually be committed.
 
-Its `stage` parameter defaults to `all_tracked`, which is `git add -u` across the whole repository. In a working tree you share with anyone else — another person, another agent — that will sweep up changes that are not yours. Pass `stage: "paths"` with an explicit list when the tree is not exclusively yours. This default is known to be too broad and is being changed; [`MCP-GIT-TOOL-006`](../../roadmap/MCP-GIT-TOOL-006-make-commit-staging-safe.md) tracks it.
+Its `stage` parameter defaults to `all_tracked`, which is `git add -u` across the whole repository. In a working tree you share with anyone else — another person, another agent — that will sweep up changes that are not yours. Pass `stage: "paths"` with an explicit list when the tree is not exclusively yours. This default is known to be too broad and is being changed; `MCP-GIT-TOOL-006` tracks it.
 
 There is no `--amend`. Amending rewrites history and forces the push flow into force-with-lease territory, so it was left out rather than added quietly.
 

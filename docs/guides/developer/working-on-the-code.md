@@ -76,4 +76,4 @@ No test touches a real user directory. The fixture safe root is always a tempora
 
 ## Before you open a pull request
 
-[`CONTRIBUTING.md`](../../../CONTRIBUTING.md) holds the checklist and the Conventional Commits table that commitlint enforces. The short version: the four gates above pass, the commit messages parse, and anything that changes a result shape is a change to a contract downstream consumers already read.
+`CONTRIBUTING.md` holds the repository contribution contract and the Conventional Commits table that commitlint enforces. The short version is complete here: the four gates above pass, the commit messages parse, and anything that changes a result shape is a change to a contract downstream consumers already read.
