@@ -6,9 +6,6 @@
   "bin": {
     "mcp-git-audit": "dist/mcp-server/index.js"
   },
-  "bugs": {
-    "url": "https://github.com/knowledgeislands/mcp-git-audit/issues"
-  },
   "dependencies": {
     "@modelcontextprotocol/server": "2.1.0",
     "zod": "^4.6.5"
