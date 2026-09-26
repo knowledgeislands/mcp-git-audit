@@ -4,13 +4,13 @@ title: Establish audience-centric guides
 area: FND
 theme: foundation-tooling
 horizon: now
-status: awaiting-review
+status: done
 blocks: []
 blocked_by: []
 transferred_from: ki-website
 baseline_ref: 12e84b28f9a6791e1fbc0687cab91bdc31c87793
 created_at: 2026-09-21T15:44:00Z
-updated_at: 2026-09-26T17:32:40Z
+updated_at: 2026-09-26T18:10:52Z
 ---
 
 ## Goal
@@ -158,6 +158,10 @@ The initial delivery verification passed and moved the full audit from fifteen s
 Concerns: the removed per-tool schema reference is a deliberate deletion a reviewer should confirm; `AGENTS.md` and `CLAUDE.md` now point at a README that no longer holds installation and configuration; the repository has no tracked behaviour contract for its tool surface.
 
 Learning worth routing, not promoted here: the npm badge advertised a package that is not on the registry, and both `README.md` and `CONTRIBUTING.md` listed `bun run ki:lint:*` scripts that `package.json` does not define. Documentation that nobody executes drifts silently; writing a guide that had to be true is what found both.
+
+## Done
+
+Accepted 2026-09-26 by Kris Brown on the review packet above.
 
 ## Discussion
 
