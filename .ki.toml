@@ -11,6 +11,8 @@
 harnesses = ["knowledgeislands/ki-agentic-harness"]
 
 [skills.ki-repo]
+repo_type = "project"
+primary_shape = "ki-repo-mcp"
 repository = "https://github.com/knowledgeislands/mcp-git-audit"
 title = "mcp-git-audit"
 description = "MCP for auditing and opt-in maintenance of branch, working-tree, and upstream state across local Git repositories."
