@@ -3,18 +3,18 @@ id: MCP-GIT-TOOL-001
 area: TOOL
 title: Support worktree pointers
 theme: tool-surface
-horizon: future
+horizon: soon
 status: draft
 blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-07-29T00:37:05Z
-updated_at: 2026-08-10T00:14:15Z
+updated_at: 2026-10-01T19:30:08Z
 ---
 
 ## Goal
 
-Achieve the stated outcome: Support worktree-pointer Git files.
+Repository discovery recognises linked Git worktrees while respecting the configured filesystem access boundary.
 
 ## Context
 
@@ -24,6 +24,14 @@ Support worktree-pointer `.git` files; the current implementation handles only `
 
 Keep the work limited to the stated surface.
 
+## Shaping
+
+This roadmap review adopts Soon shaping, with no Ready or implementation claim. Keep Soon/draft: worktree support needs explicit policy for .git pointers outside allowed roots before readiness.
+
+Promotion requires the named contract decisions and a fixture-based verification plan; no external account or network operation is needed.
+
 ## Discussion
 
-No discussion recorded yet; this item is unshaped by design at the `future` horizon.
+### Readiness review
+
+This roadmap review adopts Soon shaping, with no Ready or implementation claim. Keep Soon/draft: worktree support needs explicit policy for .git pointers outside allowed roots before readiness.

@@ -9,7 +9,7 @@ blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-09-19T11:40:44Z
-updated_at: 2026-09-20T07:47:23Z
+updated_at: 2026-10-01T19:27:46Z
 ---
 
 ## Goal
@@ -75,3 +75,7 @@ A safe design should make explicit path selection the normal commit boundary and
 ### Compatibility
 
 Changing the default or removing enum values affects the public MCP input schema and generated client. Planning should examine whether a staged-index-only mode remains useful and how callers migrate without preserving the unsafe default.
+
+### Readiness review
+
+Source confirms dry-run calls git add against the real index and default all_tracked absorbs unrelated work. Required next design: default explicit literal file paths; no broad modes; isolated preview index; a defined prepared-index mode that names the complete intended set; preservation of unrelated staged bytes; serialization and revalidation before commit; post-hook verification of exact committed paths. Reject pathspec magic/directory expansion and test hook additions, stale preview, concurrent changes, staged unrelated files and failure cleanup. An implementation plan remains unsafe until these choices and compatibility migration are concrete.
