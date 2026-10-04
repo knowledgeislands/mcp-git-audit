@@ -4,12 +4,12 @@ area: TOOL
 title: Include stash, submodule state
 theme: tool-surface
 horizon: next
-status: awaiting-review
+status: done
 blocks: []
 blocked_by: []
 baseline_ref: 8a11bdbe5a123d3fe5ec3df94c935f5ca3e58476
 created_at: 2026-07-29T00:37:05Z
-updated_at: 2026-10-04T18:22:30Z
+updated_at: 2026-10-04T20:00:00Z
 ---
 
 ## Goal
@@ -120,6 +120,10 @@ The goal is met: retained stashes and first-level submodule drift are visible pe
 ### Mini recap
 
 Delivered stash and submodule summaries with full coverage and schema-validated output; all gates pass. The notable decision is ignoring submodules in parent status to avoid unauthorised child Git. Proposed learning route: none beyond the architecture-guide paragraph already added.
+
+## Done
+
+Accepted 2026-10-04 on the review packet above after an independent Fable review returned ACCEPT (stash and first-level submodule state reported with the decided fields, read-only and bounded, submodule containment proved; holds at HEAD). Decided by the Fable reviewer under delegated autonomy (2026-10-04), reversible.
 
 ## Discussion
 

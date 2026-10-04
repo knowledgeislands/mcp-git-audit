@@ -4,12 +4,12 @@ title: Make commit staging safe
 area: TOOL
 theme: tool-surface
 horizon: next
-status: awaiting-review
+status: done
 blocks: []
 blocked_by: []
 baseline_ref: c9da5636ff0e116a516b6ec3f6e1454e00d188ca
 created_at: 2026-09-19T11:40:44Z
-updated_at: 2026-10-04T19:02:08Z
+updated_at: 2026-10-04T20:00:00Z
 ---
 
 ## Goal
@@ -125,6 +125,10 @@ Self-review against the Owner compatibility decision and Hook and failure decisi
 ### Mini recap
 
 Breaking but narrowing change to `git_repo_commit`: named paths only, isolated temporary index, truthful preview, hook-modification reporting without rewrite. Ready for owner review and acceptance; a release needs a separate semver-major decision.
+
+## Done
+
+Accepted 2026-10-04 on the review packet above after an independent Fable review returned ACCEPT (paths mode seeded from HEAD, dry run never touches the real index, prepared-index equality, committed-path-only index update, post-commit verification without reset or amend; declared departures narrow authority). Release of the breaking schema change remains a semver-major owner decision. Decided by the Fable reviewer under delegated autonomy (2026-10-04), reversible.
 
 ## Discussion
 

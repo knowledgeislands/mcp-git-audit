@@ -4,12 +4,12 @@ area: TOOL
 title: Support worktree pointers
 theme: tool-surface
 horizon: next
-status: awaiting-review
+status: done
 blocks: []
 blocked_by: []
 baseline_ref: 1c5b3f4cf8360166add0f7b47fc528d8885c0723
 created_at: 2026-07-29T00:37:05Z
-updated_at: 2026-10-04T18:10:30Z
+updated_at: 2026-10-04T20:00:00Z
 ---
 
 ## Goal
@@ -114,6 +114,10 @@ The goal is met: linked worktrees inside the safe roots are discovered and audit
 ### Mini recap
 
 Delivered pointer-file discovery and pre-Git metadata authorisation with full coverage; all gates pass. Concerns are the pre-existing ancestor fallback and non-audit tools lacking metadata checks. Proposed learning route: record the "metadata authority is never inferred from a working directory" invariant in the architecture guide (done) and capture the two follow-ups through `ki-next`.
+
+## Done
+
+Accepted 2026-10-04 on the review packet above after an independent Fable review returned ACCEPT (linked worktrees discovered and audited, escaping metadata reported unsupported with no Git process run, tests meaningful and holding at HEAD). Decided by the Fable reviewer under delegated autonomy (2026-10-04), reversible.
 
 ## Discussion
 
