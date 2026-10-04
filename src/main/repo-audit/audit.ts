@@ -3,6 +3,13 @@ import { GIT_LOCAL_TIMEOUT_MS, runGitCapture } from '../../utils/git-exec.js'
 import { resolveAgainstSafeRoots } from '../../utils/paths.js'
 import { resolveGitMetadata } from './metadata.js'
 import type { ScannedRepo, ScanResult } from './scan.js'
+import {
+  type StashSummary,
+  type SubmoduleSummary,
+  stashSummary,
+  submoduleSummary,
+  submodulesWithoutAuthority
+} from './summaries.js'
 
 // Token unlikely to appear in commit subjects; lets us split %s/%ar/%cI safely.
 const LOG_SEP = '<<<MGA-SEP>>>'
@@ -25,6 +32,8 @@ export interface RepoStatus {
   has_upstream: boolean
   ahead: number
   behind: number
+  stash: StashSummary
+  submodules: SubmoduleSummary
 }
 
 export interface AuditError {
@@ -68,8 +77,15 @@ const countStatusLines = (porcelain: string): { modified: number; untracked: num
   return { modified, untracked }
 }
 
+/**
+ * Audit one repository. `safeRoots` authorises first-level submodule
+ * inspection; without it the submodule summary is `unavailable`. The caller is
+ * responsible for authorising `repo.abs_path` and its metadata
+ * (`auditScanWithinRoots` does both).
+ */
 export const auditRepo = async (
-  repo: ScannedRepo
+  repo: ScannedRepo,
+  safeRoots?: readonly string[]
 ): Promise<{ ok: true; status: RepoStatus } | { ok: false; error: AuditError }> => {
   try {
     const sha = (await runGit(repo.abs_path, ['rev-parse', '--short', 'HEAD'])).trim()
@@ -86,7 +102,9 @@ export const auditRepo = async (
     const rel_date = relDateRaw.trim()
     const iso_date = isoDateRaw.trim()
 
-    const porcelain = await runGit(repo.abs_path, ['status', '--porcelain'])
+    // Submodules are ignored here so the parent status never runs Git inside an unauthorised child;
+    // their state is reported through the `submodules` summary instead.
+    const porcelain = await runGit(repo.abs_path, ['status', '--porcelain', '--ignore-submodules=all'])
     const { modified, untracked } = countStatusLines(porcelain)
 
     const remoteOut = await tryRunGit(repo.abs_path, ['remote', 'get-url', 'origin'])
@@ -108,6 +126,10 @@ export const auditRepo = async (
       }
     }
 
+    const stash = await stashSummary(repo.abs_path)
+    const submodules =
+      safeRoots === undefined ? submodulesWithoutAuthority() : await submoduleSummary(safeRoots, repo.abs_path)
+
     return {
       ok: true,
       status: {
@@ -127,7 +149,9 @@ export const auditRepo = async (
         remote_url,
         has_upstream,
         ahead,
-        behind
+        behind,
+        stash,
+        submodules
       }
     }
   } catch (err) {
@@ -135,9 +159,13 @@ export const auditRepo = async (
   }
 }
 
-const runAudit = async (scan: ScanResult, initialErrors: readonly AuditError[]): Promise<AuditResult> => {
+const runAudit = async (
+  scan: ScanResult,
+  initialErrors: readonly AuditError[],
+  safeRoots?: readonly string[]
+): Promise<AuditResult> => {
   const audited_at = new Date().toISOString()
-  const results = await Promise.all(scan.repos.map((r) => auditRepo(r)))
+  const results = await Promise.all(scan.repos.map((r) => auditRepo(r, safeRoots)))
   const repos: RepoStatus[] = []
   const errors: AuditError[] = [...initialErrors]
   for (const result of results) {
@@ -194,5 +222,5 @@ export const auditScanWithinRoots = async (
       errors.push({ path: r.path, message: errMessage(err) })
     }
   }
-  return runAudit({ ...scan, root, repos: authorised }, errors)
+  return runAudit({ ...scan, root, repos: authorised }, errors, safeRoots)
 }

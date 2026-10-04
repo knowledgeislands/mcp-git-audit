@@ -104,7 +104,9 @@ describe('auditRepo', () => {
         'rel_date',
         'remote_url',
         'sha',
+        'stash',
         'subject',
+        'submodules',
         'untracked'
       ].sort()
     )
@@ -124,6 +126,15 @@ describe('auditRepo', () => {
     expect(result.status.sha).toMatch(/^[0-9a-f]{7,}$/)
     expect(result.status.subject).toBe('initial')
     expect(result.status.iso_date).toMatch(/^\d{4}-\d{2}-\d{2}T/)
+    expect(result.status.stash).toEqual({ status: 'available', count: 0 })
+    // Without safe roots, children cannot be authorised: unavailable, never zero.
+    expect(result.status.submodules).toEqual({
+      status: 'unavailable',
+      total: null,
+      omitted: null,
+      entries: [],
+      error: expect.stringMatching(/requires safe roots/)
+    })
   })
 
   it('counts modified and untracked separately', async () => {

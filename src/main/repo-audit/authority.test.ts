@@ -66,6 +66,14 @@ beforeAll(async () => {
   await git(main, 'worktree', 'add', '-q', path.join(safe, 'group', 'wt-ok'), '-b', 'wt-ok')
   const foreign = await makeRepo(path.join(outside, 'foreign'))
   await git(foreign, 'worktree', 'add', '-q', path.join(safe, 'group', 'wt-escape'), '-b', 'wt-escape')
+
+  // A parent whose first-level submodule points at metadata outside the safe roots.
+  const parent = await makeRepo(path.join(safe, 'subs', 'parent'))
+  const foreignHead = (await git(foreign, 'rev-parse', 'HEAD')).stdout.trim()
+  await fs.mkdir(path.join(parent, 'child'), { recursive: true })
+  await git(parent, 'update-index', '--add', '--cacheinfo', `160000,${foreignHead},child`)
+  await git(parent, 'commit', '-q', '-m', 'gitlink')
+  await fs.writeFile(path.join(parent, 'child', '.git'), `gitdir: ${path.join(foreign, '.git')}\n`, 'utf-8')
 })
 
 afterAll(async () => {
@@ -79,12 +87,13 @@ beforeEach(() => {
 describe('auditScanWithinRoots', () => {
   it('audits ordinary repositories and authorised worktrees, and reports escaping worktrees without running Git', async () => {
     const scan = await scanRoot(safe, { max_depth: 2 })
-    expect(scan.repos.map((r) => r.path)).toEqual(['group/main', 'group/wt-escape', 'group/wt-ok'])
+    expect(scan.repos.map((r) => r.path)).toEqual(['group/main', 'group/wt-escape', 'group/wt-ok', 'subs/parent'])
 
     const result = await auditScanWithinRoots(SAFE_ROOTS, scan, { include_stale_days: 30 })
     expect(result.repos.map((r) => [r.path, r.branch])).toEqual([
       ['group/main', 'main'],
-      ['group/wt-ok', 'wt-ok']
+      ['group/wt-ok', 'wt-ok'],
+      ['subs/parent', 'main']
     ])
     expect(result.errors).toEqual([
       { path: 'group/wt-escape', message: expect.stringMatching(/gitdir target escapes the configured safe roots/) }
@@ -113,6 +122,25 @@ describe('auditScanWithinRoots', () => {
     await expect(auditScanWithinRoots(SAFE_ROOTS, scan, { include_stale_days: 30 })).rejects.toThrow(
       /not inside any configured safe_root/
     )
+  })
+})
+
+describe('submodule authority', () => {
+  it('never runs Git inside a submodule whose metadata escapes the safe roots', async () => {
+    const scan = await scanRoot(path.join(safe, 'subs'), { max_depth: 1 })
+    const result = await auditScanWithinRoots(SAFE_ROOTS, scan, { include_stale_days: 30 })
+    expect(result.errors).toBeUndefined()
+    expect(result.repos[0]?.submodules.entries).toEqual([
+      expect.objectContaining({ path: 'child', state: 'unavailable', actual_commit: null, dirty: null })
+    ])
+    const child = path.join(safe, 'subs', 'parent', 'child')
+    const childReal = path.join(await fs.realpath(path.join(safe, 'subs', 'parent')), 'child')
+    const targets = gitTargets()
+    expect(targets.length).toBeGreaterThan(0)
+    expect(targets.some((t) => t === child || t === childReal)).toBe(false)
+    // No network, initialisation or recursive submodule command was issued.
+    const argvs = promisedExecFile.mock.calls.map((c) => c[1].join(' '))
+    expect(argvs.some((a) => /\b(fetch|clone|submodule|pull|push)\b|--recurse/.test(a))).toBe(false)
   })
 })
 

@@ -98,6 +98,30 @@ const detailInput = z
   })
   .strict()
 
+const summaryStatusSchema = z.enum(['available', 'unavailable'])
+
+const stashSummarySchema = z.object({
+  status: summaryStatusSchema,
+  count: z.number().nullable(),
+  error: z.string().optional()
+})
+
+const submoduleEntrySchema = z.object({
+  path: z.string(),
+  expected_commit: z.string(),
+  actual_commit: z.string().nullable(),
+  state: z.enum(['uninitialised', 'matched', 'changed', 'unavailable']),
+  dirty: z.boolean().nullable()
+})
+
+const submoduleSummarySchema = z.object({
+  status: summaryStatusSchema,
+  total: z.number().nullable(),
+  omitted: z.number().nullable(),
+  entries: z.array(submoduleEntrySchema).max(100),
+  error: z.string().optional()
+})
+
 const auditedRepoSchema = z.object({
   path: z.string(),
   abs_path: z.string(),
@@ -115,7 +139,9 @@ const auditedRepoSchema = z.object({
   remote_url: z.string().nullable(),
   has_upstream: z.boolean(),
   ahead: z.number(),
-  behind: z.number()
+  behind: z.number(),
+  stash: stashSummarySchema,
+  submodules: submoduleSummarySchema
 })
 
 const diffstatEntrySchema = z.object({ added: z.number(), removed: z.number(), path: z.string() })
@@ -203,9 +229,12 @@ Args:
   - include_stale_days (number): Reserved; currently unused. Default 30.
 
 Returns:
-  JSON object: { root, scanned_at, audited_at, repos: [...], errors?: [...] } where each repo entry includes path, group, name, branch, detached, sha, subject, rel_date, iso_date, modified, untracked, has_remote, remote_url, has_upstream, ahead, behind.
+  JSON object: { root, scanned_at, audited_at, repos: [...], errors?: [...] } where each repo entry includes path, group, name, branch, detached, sha, subject, rel_date, iso_date, modified, untracked, has_remote, remote_url, has_upstream, ahead, behind, stash, submodules.
 
-Per-repo failures (e.g. corrupt .git/HEAD) are aggregated into the \`errors\` array rather than failing the whole call.`,
+\`stash\` is { status: "available"|"unavailable", count: number|null, error? } — a count only, never stash subjects.
+\`submodules\` is { status, total: number|null, omitted: number|null, entries: [{ path, expected_commit, actual_commit: string|null, state: "uninitialised"|"matched"|"changed"|"unavailable", dirty: boolean|null }], error? } covering first-level gitlinks in the index only: at most 100 entries sorted by path, the rest counted in \`omitted\`. No fetch, init or recursion. A child runs \`git\` only after its directory and metadata are authorised against MCP_GIT_AUDIT_SAFE_ROOTS; otherwise it is "unavailable". Unknown values are null, never zero. Submodule changes are reported here, not in \`modified\`.
+
+Repositories whose Git metadata (\`.git\` pointer, gitdir or commondir) escapes the safe roots, and per-repo failures (e.g. corrupt .git/HEAD), are aggregated into the \`errors\` array of { path, message } objects rather than failing the whole call.`,
       inputSchema: auditInput,
       outputSchema: auditOutput,
       annotations: READ_ONLY

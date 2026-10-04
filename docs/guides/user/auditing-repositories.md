@@ -36,6 +36,20 @@ Two properties of the result are worth relying on.
 
 **Ahead and behind are as fresh as your last fetch.** This tool reads refs; it does not contact a remote. A repository that looks up to date may simply not have fetched recently. Closing that gap means `git_repo_fetch`, which is a write-level tool — see [Granting write access](granting-write-access.md).
 
+## Stashes and submodules
+
+Two kinds of work escape the modified and untracked counts, so each audited repository also carries a `stash` and a `submodules` summary.
+
+`stash` reports how many stash entries the repository retains: `{ status: "available", count }`. Stash subjects are never read or returned, because they often carry the very notes a caller should not see. If `git stash list` fails, the summary is `{ status: "unavailable", count: null, error }` — an unknown is never reported as zero.
+
+`submodules` lists the repository's first-level gitlinks, read from its index. `total` counts them, at most 100 `entries` are returned in path order, and `omitted` counts the rest. Each entry gives the literal repository-relative `path`, the `expected_commit` recorded by the parent, the `actual_commit` checked out in the child (or `null`), a `state` and a `dirty` flag:
+
+- `uninitialised` — the child has no `.git` entry (never cloned or deinitialised); `actual_commit` and `dirty` are `null`.
+- `matched` or `changed` — the child's HEAD equals or differs from the expected commit; `dirty` says whether the child has working-tree changes, or is `null` when that could not be read.
+- `unavailable` — the child could not be inspected safely: its Git metadata is unsupported or lies outside the safe roots, its HEAD cannot be read, or the gitlink is mid-conflict.
+
+The audit never fetches, initialises or recurses into submodules: a submodule's own submodules are not listed, and `git` runs inside a child only after its metadata has passed the same authorisation as any other repository (see [Linked worktrees and pointer files](#linked-worktrees-and-pointer-files)). Because of that, the parent's modified count ignores submodules; a moved or dirty submodule shows up in `submodules`, not in `modified`. If the index cannot be listed, the summary is `unavailable` with `total`, `omitted` and the entries left empty or `null`.
+
 ## Looking at one repository
 
 Once the audit has named something interesting, three tools work on a single repository, each taking the absolute path from the earlier result. That path is re-validated against the safe roots before anything runs: a scan result cannot be edited to reach somewhere the server was never allowed to go. `git_repo_detail` also authorises the repository's Git metadata, as described under [Linked worktrees and pointer files](#linked-worktrees-and-pointer-files), and fails rather than reading unauthorised metadata.
