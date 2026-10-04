@@ -117,3 +117,39 @@ describe('git_repos_audit structured response', () => {
     expect(result.content[0]?.text).toMatch(/not inside any configured safe_root/)
   })
 })
+
+describe('git_repos_audit_roots structured response', () => {
+  it('matches the declared output schema across ok, partial, error and duplicate roots', async () => {
+    const missing = path.join(safe, 'missing')
+    const result = await call('git_repos_audit_roots', { roots: [safe, missing, safe] })
+    expect(result.isError).toBeUndefined()
+    const parsed = tools.get('git_repos_audit_roots')?.config.outputSchema.parse(result.structuredContent) as {
+      limit: number
+      max_depth: number
+      roots: { status: string; repos: { path: string }[]; errors: { path: string; message: string }[] }[]
+      duplicate_roots: { duplicate_of_index: number }[]
+    }
+    expect(parsed).toMatchObject({ limit: 100, max_depth: 2 })
+    expect(parsed.roots.map((r) => r.status)).toEqual(['partial', 'error'])
+    expect(parsed.roots[0]?.repos.map((r) => r.path)).toEqual(['repo'])
+    expect(parsed.roots[0]?.errors).toEqual([
+      { path: 'wt-escape', message: expect.stringMatching(/unsupported Git metadata/) }
+    ])
+    expect(parsed.duplicate_roots).toEqual([expect.objectContaining({ duplicate_of_index: 0 })])
+  })
+
+  it('rejects the whole request when any root escapes the safe roots', async () => {
+    const result = await call('git_repos_audit_roots', { roots: [safe, outside] })
+    expect(result.isError).toBe(true)
+    expect(result.content[0]?.text).toMatch(/roots\[1\]: .*not inside any configured safe_root/)
+  })
+
+  it('declares strict, bounded input', () => {
+    const input = tools.get('git_repos_audit_roots')?.config.inputSchema
+    expect(input?.safeParse({ roots: [] }).success).toBe(false)
+    expect(input?.safeParse({ roots: Array.from({ length: 17 }, () => safe) }).success).toBe(false)
+    expect(input?.safeParse({ roots: [safe], limit: 1001 }).success).toBe(false)
+    expect(input?.safeParse({ roots: [safe], max_depth: 9 }).success).toBe(false)
+    expect(input?.safeParse({ roots: [safe], extra: true }).success).toBe(false)
+  })
+})

@@ -31,7 +31,7 @@ bun run ki:test:smoke          # build, then boot the built server and check its
 
 The development scripts set `NODE_ENV=development`, which is the only condition under which the server reads `.env.*` files. Copy [`.env.example`](../../../.env.example) to `.env.development` and set `MCP_GIT_AUDIT_SAFE_ROOTS` to a scratch directory — pointing a development server at your real tree is unnecessary and makes test output harder to read.
 
-The MCP Inspector is the fastest way to see what the client will see. It shows the registered tool list, which is how you confirm the access gate behaves: start it with the default configuration and five tools appear, start it with `MCP_GIT_AUDIT_ACCESS_LEVEL=destructive` and twelve do.
+The MCP Inspector is the fastest way to see what the client will see. It shows the registered tool list, which is how you confirm the access gate behaves: start it with the default configuration and six tools appear, start it with `MCP_GIT_AUDIT_ACCESS_LEVEL=destructive` and thirteen do.
 
 ## Gates
 

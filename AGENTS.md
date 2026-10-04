@@ -48,7 +48,7 @@ To use the code from a script: `const cfg = loadConfig(); await diffRepo(cfg.saf
 
 Tool names follow `<app>_<resource>_<action>` (snake_case) with `<app>` = `git`. Plural resource for collection ops, singular for single-item ops. Current surface:
 
-- **repo-audit** (read-only): `git_repos_scan`, `git_repos_audit`, `git_repo_detail`.
+- **repo-audit** (read-only): `git_repos_scan`, `git_repos_audit`, `git_repos_audit_roots`, `git_repo_detail`.
 - **repo-commit**: `git_repo_diff` (read), `git_repo_commit` (destructive — non-idempotent: writes a new commit each call).
 - **repo-remotes**: `git_repo_remotes_list` (read), `git_repo_remote_set_url` (write/idempotent), `git_repo_remote_add` (write/additive), `git_repo_remote_remove` (destructive).
 - **repo-sync**: `git_repo_fetch` (write — open-world idempotent), `git_repo_pull` (destructive — open-world), `git_repo_push` (destructive — open-world).

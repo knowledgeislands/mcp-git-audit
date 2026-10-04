@@ -1,5 +1,5 @@
 // @ts-nocheck
-// Generated on 2026-10-04T19:00:13.736Z by @knowledgeislands/mcp-git-audit@0.9.0
+// Generated on 2026-10-04T20:13:37.652Z by @knowledgeislands/mcp-git-audit@0.9.0
 // Server: kit-mcp-git-audit
 // Source: /Users/krisbrown/.mcporter/mcporter.json
 // Transport: STDIO /Users/krisbrown/.local/share/mise/shims/node /Users/krisbrown/workspaces/kit/knowledgeislands/mcp-git-audit/dist/mcp-server/index.js
@@ -63,6 +63,39 @@ export interface KitMcpGitAuditTools {
    * @param include_stale_days? Reserved — currently unused; the consumer computes stale itself.
    */
   git_repos_audit(params: { scan: Record<string, unknown>; include_stale_days?: number }): Promise<CallResult>;
+
+  /**
+   * Scan and audit up to 16 roots in one read-only request, returning one result per root. Each root is
+   * scanned as `git_repos_scan` does and its selected repositories are audited as `git_repos_audit`
+   * does; no fetch and no mutation.
+   * Every root is authorised and canonicalised against MCP_GIT_AUDIT_SAFE_ROOTS before any root is
+   * walked: a relative root or one that escapes the safe roots rejects the whole request and no root is
+   * touched. Roots that resolve to the same canonical path are audited once, at the first position, and
+   * reported in `duplicate_roots`. Overlapping distinct roots (one nested in another) stay separate
+   * results and may repeat repositories.
+   * Roots are processed in order. Every root is scanned in full; repositories are then selected in scan
+   * order (group, then name) until the whole-request `limit` is spent, and only selected repositories
+   * run `git`. `omitted` counts those found but not selected. The limit bounds payload and Git work, not
+   * elapsed time.
+   * Args:
+   * - roots (string[]): 1-16 absolute or ~/... paths inside MCP_GIT_AUDIT_SAFE_ROOTS.
+   * - max_depth (number): Max depth from each root at which a repo dir may live. Default 2, max 8.
+   * - limit (number): Repositories audited across the whole request. Default 100, max 1000.
+   * Returns:
+   * JSON object: { requested_at, limit, max_depth, roots: [{ requested, root, status, scanned_at,
+   * audited_at, repos: [...], errors: [{ path, message }], omitted }], duplicate_roots: [{ requested,
+   * canonical, duplicate_of_index }] }. `root` is the canonical path and `duplicate_of_index` indexes
+   * `roots`. Repo entries match `git_repos_audit`.
+   * `status` is "error" when the root is absent or not a directory (scanned_at and audited_at null, one
+   * error naming the root), "partial" when any repository failed or was omitted, and "ok" otherwise,
+   * including a root with no repositories. One root's failure never fails its peers.
+   *
+   * @param roots Absolute or ~-expanded roots to audit, each inside one of MCP_GIT_AUDIT_SAFE_ROOTS. All
+   *              are authorised before any is walked.
+   * @param max_depth? Maximum depth (from each root) at which a repo directory may live. Default 2.
+   * @param limit? Whole-request cap on repositories audited, filled in root order. Default 100.
+   */
+  git_repos_audit_roots(params: { roots: string[]; max_depth?: number; limit?: number }): Promise<CallResult>;
 
   /**
    * Return commit history and working-tree status for a single repo identified by an absolute path from
@@ -394,6 +427,10 @@ export async function createKitMcpGitAuditClient(options: CreateClientOptions = 
 
     async git_repos_audit(params) {
       return tools.git_repos_audit(params === undefined ? {} : params);
+    },
+
+    async git_repos_audit_roots(params) {
+      return tools.git_repos_audit_roots(params === undefined ? {} : params);
     },
 
     async git_repo_detail(params) {

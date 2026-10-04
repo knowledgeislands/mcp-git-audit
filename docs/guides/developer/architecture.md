@@ -12,7 +12,7 @@ Everything under `src/` belongs to one of five layers, and dependencies only eve
 
 **`src/tools/`** holds MCP tool definitions and nothing else. A tool file validates arguments with a strict Zod schema, calls a `main/` function passing the config primitive it needs, and maps the result or the thrown error into an MCP envelope with `jsonResult` or `errorResult`. These files are excluded from coverage, which is precisely why logic must not live in them — anything with a branch in it belongs one layer down, where the gate can see it.
 
-**`src/main/`** is the real implementation, grouped by concern in parallel with the tool groups: `repo-audit/` (`scan`, `audit`, `detail`), `repo-commit/` (`diff`, `commit`), `repo-remotes/`, and `repo-sync/`. Nothing here knows about MCP. Every entry point that touches the filesystem takes `safeRoots: readonly string[]` as its **first** argument, which makes the safety obligation impossible to forget at a call site and makes the whole layer usable from a plain script:
+**`src/main/`** is the real implementation, grouped by concern in parallel with the tool groups: `repo-audit/` (`scan`, `audit`, `batch`, `detail`), `repo-commit/` (`diff`, `commit`), `repo-remotes/`, and `repo-sync/`. Nothing here knows about MCP. Every entry point that touches the filesystem takes `safeRoots: readonly string[]` as its **first** argument, which makes the safety obligation impossible to forget at a call site and makes the whole layer usable from a plain script:
 
 ```ts
 const cfg = loadConfig()
@@ -44,6 +44,8 @@ Two things this gate is not. It is not an effect-level safeguard: `dry_run` is w
 
 The reason is that an envelope which has left the server is no longer the server's own data. It has been through a model and a client, and it comes back as an argument. A cached scan can never widen the security boundary, because the boundary is re-checked on the way back in. Any future tool that accepts a previous result as input inherits this obligation.
 
+`git_repos_audit_roots` composes the same pieces rather than adding a third path. `auditRootsWithinSafeRoots` in `src/main/repo-audit/batch.ts` authorises and canonicalises every requested root before it walks any of them, so a bad root rejects the request with nothing read. `resolveAgainstSafeRoots` authorises a missing path through its deepest existing ancestor and returns that ancestor, so the batch layer additionally realpaths each root and treats one that cannot be resolved as a per-root `error`; it never walks the ancestor or a lexically normalised spelling, which a `..` segment could otherwise steer outside the authorised ancestor. Canonical duplicates are dropped before work starts. Roots then run sequentially: each is scanned in full with `scanRoot`, the remaining whole-request budget selects repositories in scan order, and only that selection goes through `auditScanWithinRoots`, which re-validates every path and authorises Git metadata exactly as the single-root audit does. Sequential processing keeps `limit` deterministic and keeps concurrent `git` work no higher than one audit.
+
 ## Safety invariants
 
 These hold across the whole server, and a change that breaks one is a defect regardless of what it improves.
@@ -74,6 +76,6 @@ The tests that pin these live alongside the code they guard — `src/utils/paths
 
 ## Naming
 
-Tool names are `<app>_<resource>_<action>` in snake_case with `<app>` fixed at `git`: plural resource for collection operations, singular for single-item ones. The current surface groups as `repo-audit` (`git_repos_scan`, `git_repos_audit`, `git_repo_detail`), `repo-commit` (`git_repo_diff`, `git_repo_commit`), `repo-remotes` (`git_repo_remotes_list`, `git_repo_remote_set_url`, `git_repo_remote_add`, `git_repo_remote_remove`), and `repo-sync` (`git_repo_fetch`, `git_repo_pull`, `git_repo_push`).
+Tool names are `<app>_<resource>_<action>` in snake_case with `<app>` fixed at `git`: plural resource for collection operations, singular for single-item ones. The current surface groups as `repo-audit` (`git_repos_scan`, `git_repos_audit`, `git_repos_audit_roots`, `git_repo_detail`), `repo-commit` (`git_repo_diff`, `git_repo_commit`), `repo-remotes` (`git_repo_remotes_list`, `git_repo_remote_set_url`, `git_repo_remote_add`, `git_repo_remote_remove`), and `repo-sync` (`git_repo_fetch`, `git_repo_pull`, `git_repo_push`).
 
 To survey what is registered, `grep registerTool src/tools/*/index.ts`.

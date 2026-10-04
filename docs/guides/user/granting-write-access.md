@@ -41,7 +41,7 @@ Set it in the client's `env` block and restart the client:
 }
 ```
 
-An unrecognised value aborts startup rather than falling back, so a typo presents as a server that will not start. Confirm the change took by asking the client to list its tools: `read` shows five, `write` eight, `destructive` twelve.
+An unrecognised value aborts startup rather than falling back, so a typo presents as a server that will not start. Confirm the change took by asking the client to list its tools: `read` shows six, `write` nine, `destructive` thirteen.
 
 A level is derived from each tool's own MCP annotations rather than from its name, so the split above is a property of what a tool does, not of what it is called.
 

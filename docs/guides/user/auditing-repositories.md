@@ -4,7 +4,7 @@ Find out what a tree of repositories looks like — which are dirty, which are b
 
 ## The shape of the work
 
-The read-only surface is five tools in two stages, and the split is the thing worth understanding before you start.
+The read-only surface is six tools built around two stages, and the split is the thing worth understanding before you start.
 
 `git_repos_scan` walks the filesystem and finds repositories. It runs no `git` at all. `git_repos_audit` takes the result of that walk and runs the `git` commands that produce branch, status, ahead/behind, and last-commit facts for each repository it names.
 
@@ -35,6 +35,38 @@ Two properties of the result are worth relying on.
 **A failing repository does not fail the call.** A corrupt `.git/HEAD`, a permission problem, or a `git` invocation that times out is collected into an `errors[]` array alongside the repositories that did work. A single broken checkout in a tree of two hundred costs you one entry, not the audit. A repository whose Git metadata is unsupported or lies outside the safe roots is reported the same way, without any `git` command being run against it. Each entry carries the repository's relative `path` and a `message`.
 
 **Ahead and behind are as fresh as your last fetch.** This tool reads refs; it does not contact a remote. A repository that looks up to date may simply not have fetched recently. Closing that gap means `git_repo_fetch`, which is a write-level tool — see [Granting write access](granting-write-access.md).
+
+## Auditing several roots at once
+
+`git_repos_audit_roots` scans and audits up to 16 roots in one read-only call and returns one result per root, in the order you asked for them. Each root is scanned as `git_repos_scan` would scan it and its repositories are audited as `git_repos_audit` would audit them, so repository entries, `errors[]`, stashes and submodules look exactly as described above. There is no cached scan to hand back; use the two-step tools when you want to re-audit the same walk.
+
+Every root is checked against `MCP_GIT_AUDIT_SAFE_ROOTS` before any root is walked. A relative root, or one that escapes the safe roots directly or through a symlink, rejects the whole request and nothing is read; the error names the offending position, such as `roots[1]`. Once the request is accepted, one root's trouble never fails another's.
+
+`max_depth` (default 2, at most 8) applies to every root. `limit` (default 100, at most 1000) caps the repositories audited across the whole request, not per root: roots are processed in order, each is scanned in full, and its repositories are taken in scan order - group, then name - until the budget runs out. Only the repositories taken run `git`; `omitted` counts the ones found but not taken. The limit bounds the size of the answer and the Git work, not elapsed time or how much of the filesystem a scan visits.
+
+Each result carries `requested` (as you wrote it) and `root` (its canonical, symlink-resolved path), plus a `status`:
+
+- `ok` - every repository found was audited without error, including a root that holds no repositories.
+- `partial` - some repositories failed and appear in `errors[]`, or `omitted` is above zero because the limit was reached.
+- `error` - the root does not exist or is not a directory. `scanned_at` and `audited_at` are `null`, and `errors[]` holds one entry naming the root.
+
+`audited_at` is also `null` when a root was scanned but none of its repositories were audited, because it was empty or the budget was already spent.
+
+Two roots that resolve to the same directory - `~/work` and `/Users/you/work`, say, or a symlink and its target - are audited once, at the first position, and each later spelling is listed in `duplicate_roots` with the index of the result that covers it. Roots that overlap without being identical, such as `~/work` and `~/work/clients`, stay separate results and may report the same repository twice; each appearance counts towards `limit`.
+
+```json
+{
+  "requested_at": "2026-10-04T09:00:00.000Z",
+  "limit": 4,
+  "max_depth": 2,
+  "roots": [
+    { "requested": "~/work", "root": "/Users/you/work", "status": "ok", "scanned_at": "...", "audited_at": "...", "repos": ["... 3 repositories ..."], "errors": [], "omitted": 0 },
+    { "requested": "~/oss", "root": "/Users/you/oss", "status": "partial", "scanned_at": "...", "audited_at": "...", "repos": ["... 1 repository ..."], "errors": [], "omitted": 2 },
+    { "requested": "~/gone", "root": "/Users/you/gone", "status": "error", "scanned_at": null, "audited_at": null, "repos": [], "errors": [{ "path": "/Users/you/gone", "message": "root is not accessible: ..." }], "omitted": 0 }
+  ],
+  "duplicate_roots": [{ "requested": "/Users/you/work", "canonical": "/Users/you/work", "duplicate_of_index": 0 }]
+}
+```
 
 ## Stashes and submodules
 

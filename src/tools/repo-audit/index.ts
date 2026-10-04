@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/server'
 import { z } from 'zod'
 import type { Config } from '../../config/index.js'
-import { auditScanWithinRoots, repoDetail, scanRoot } from '../../main/repo-audit/index.js'
+import { auditRootsWithinSafeRoots, auditScanWithinRoots, repoDetail, scanRoot } from '../../main/repo-audit/index.js'
 import { READ_ONLY } from '../../utils/annotations.js'
 import { errMessage } from '../../utils/errors.js'
 import { resolveAgainstSafeRoots } from '../../utils/paths.js'
@@ -71,6 +71,32 @@ const auditInput = z
       .min(1)
       .default(30)
       .describe('Reserved — currently unused; the consumer computes stale itself.')
+  })
+  .strict()
+
+const auditRootsInput = z
+  .object({
+    roots: z
+      .array(z.string().min(1))
+      .min(1)
+      .max(16)
+      .describe(
+        'Absolute or ~-expanded roots to audit, each inside one of MCP_GIT_AUDIT_SAFE_ROOTS. All are authorised before any is walked.'
+      ),
+    max_depth: z
+      .number()
+      .int()
+      .min(1)
+      .max(8)
+      .default(2)
+      .describe('Maximum depth (from each root) at which a repo directory may live. Default 2.'),
+    limit: z
+      .number()
+      .int()
+      .min(1)
+      .max(1000)
+      .default(100)
+      .describe('Whole-request cap on repositories audited, filled in root order. Default 100.')
   })
   .strict()
 
@@ -173,6 +199,25 @@ const auditOutput = z.object({
   errors: z.array(auditErrorSchema).optional()
 })
 
+const rootAuditSchema = z.object({
+  requested: z.string(),
+  root: z.string(),
+  status: z.enum(['ok', 'partial', 'error']),
+  scanned_at: z.string().nullable(),
+  audited_at: z.string().nullable(),
+  repos: z.array(auditedRepoSchema),
+  errors: z.array(auditErrorSchema),
+  omitted: z.number()
+})
+
+const auditRootsOutput = z.object({
+  requested_at: z.string(),
+  limit: z.number(),
+  max_depth: z.number(),
+  roots: z.array(rootAuditSchema),
+  duplicate_roots: z.array(z.object({ requested: z.string(), canonical: z.string(), duplicate_of_index: z.number() }))
+})
+
 const detailOutput = z.object({
   abs_path: z.string(),
   path: z.string(),
@@ -244,6 +289,38 @@ Repositories whose Git metadata (\`.git\` pointer, gitdir or commondir) escapes 
         return jsonResult(await auditScanWithinRoots(cfg.safeRoots, scan, { include_stale_days }))
       } catch (err) {
         return errorResult('auditing repos', err)
+      }
+    }
+  )
+
+  server.registerTool(
+    'git_repos_audit_roots',
+    {
+      title: 'Scan and audit several repository roots in one call',
+      description: `Scan and audit up to 16 roots in one read-only request, returning one result per root. Each root is scanned as \`git_repos_scan\` does and its selected repositories are audited as \`git_repos_audit\` does; no fetch and no mutation.
+
+Every root is authorised and canonicalised against MCP_GIT_AUDIT_SAFE_ROOTS before any root is walked: a relative root or one that escapes the safe roots rejects the whole request and no root is touched. Roots that resolve to the same canonical path are audited once, at the first position, and reported in \`duplicate_roots\`. Overlapping distinct roots (one nested in another) stay separate results and may repeat repositories.
+
+Roots are processed in order. Every root is scanned in full; repositories are then selected in scan order (group, then name) until the whole-request \`limit\` is spent, and only selected repositories run \`git\`. \`omitted\` counts those found but not selected. The limit bounds payload and Git work, not elapsed time.
+
+Args:
+  - roots (string[]): 1-16 absolute or ~/... paths inside MCP_GIT_AUDIT_SAFE_ROOTS.
+  - max_depth (number): Max depth from each root at which a repo dir may live. Default 2, max 8.
+  - limit (number): Repositories audited across the whole request. Default 100, max 1000.
+
+Returns:
+  JSON object: { requested_at, limit, max_depth, roots: [{ requested, root, status, scanned_at, audited_at, repos: [...], errors: [{ path, message }], omitted }], duplicate_roots: [{ requested, canonical, duplicate_of_index }] }. \`root\` is the canonical path and \`duplicate_of_index\` indexes \`roots\`. Repo entries match \`git_repos_audit\`.
+
+\`status\` is "error" when the root is absent or not a directory (scanned_at and audited_at null, one error naming the root), "partial" when any repository failed or was omitted, and "ok" otherwise, including a root with no repositories. One root's failure never fails its peers.`,
+      inputSchema: auditRootsInput,
+      outputSchema: auditRootsOutput,
+      annotations: READ_ONLY
+    },
+    async ({ roots, max_depth, limit }) => {
+      try {
+        return jsonResult(await auditRootsWithinSafeRoots(cfg.safeRoots, roots, { max_depth, limit }))
+      } catch (err) {
+        return errorResult('auditing repository roots', err)
       }
     }
   )

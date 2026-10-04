@@ -11,4 +11,5 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 - Discovery of linked worktrees and other `.git` pointer files, with every `gitdir` and `commondir` target authorised against the safe roots before any `git` call; escaping or malformed metadata is reported as unsupported.
 - `git_repos_audit` declares its `errors[]` entries as `{ path, message }` objects, matching what it returns.
 - `git_repos_audit` reports a retained-stash count and a bounded first-level submodule summary (expected and actual commit, state, dirty flag) per repository; unavailable states are never reported as zero.
+- `git_repos_audit_roots` scans and audits up to 16 roots in one read-only call, authorising every root before any is walked, removing canonical duplicates, sharing one repository limit across roots and reporting `ok`, `partial` or `error` per root.
 - Changed: the parent working-tree status in `git_repos_audit` ignores submodules, so submodule changes are reported in `submodules` rather than counted as modified files.

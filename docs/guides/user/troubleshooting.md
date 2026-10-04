@@ -15,7 +15,7 @@ If none of those appear, the launch itself is failing. Confirm the path in `args
 
 ## The tools I need are not listed
 
-You are at a lower access level than the tool requires. At `read` you get five tools, at `write` eight, at `destructive` twelve. This is not a permissions error at call time: the tool was never registered, so the client cannot show it. [Granting write access](granting-write-access.md) covers raising the level, and the change needs a client restart because configuration is read once at startup.
+You are at a lower access level than the tool requires. At `read` you get six tools, at `write` nine, at `destructive` thirteen. This is not a permissions error at call time: the tool was never registered, so the client cannot show it. [Granting write access](granting-write-access.md) covers raising the level, and the change needs a client restart because configuration is read once at startup.
 
 If you changed the `env` block and nothing moved, the restart is the missing step. Note also that `.env` files are only loaded when `NODE_ENV=development`, which the development scripts set and your client does not — configuration for a client-launched server must come from the client's `env` block.
 

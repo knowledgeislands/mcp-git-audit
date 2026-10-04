@@ -6,7 +6,7 @@ An MCP (Model Context Protocol) server that walks a tree of local git repositori
 
 Every path it touches is validated against a configurable allow-list of safe roots, including paths handed back to it from an earlier result, so the server cannot reach outside that allow-list even when asked to. Mutating tools are not registered at all until an operator raises the access level, and they preview by default when they are.
 
-The read-only audit work is split across two tools — `git_repos_scan` for the filesystem walk and `git_repos_audit` for the per-repository `git` calls — so one scan can be cached and re-audited many times without paying for the walk again.
+The read-only audit work is split across two tools — `git_repos_scan` for the filesystem walk and `git_repos_audit` for the per-repository `git` calls — so one scan can be cached and re-audited many times without paying for the walk again. `git_repos_audit_roots` combines both for several roots in one call when no cached scan is needed.
 
 ## Available tools
 
@@ -16,6 +16,7 @@ The level column is the minimum `MCP_GIT_AUDIT_ACCESS_LEVEL` at which each tool 
 | ------------------------- | ----------- | ------------------------------------------------------------------ |
 | `git_repos_scan`          | read        | Walk a tree for `.git` directories. Runs no `git`.                 |
 | `git_repos_audit`         | read        | Per-repo branch, status, ahead/behind, and last commit.            |
+| `git_repos_audit_roots`   | read        | Scan and audit up to 16 roots in one call, one result per root.    |
 | `git_repo_detail`         | read        | Commit history and working-tree listing for one repository.        |
 | `git_repo_diff`           | read        | Structured per-file diff, staged or unstaged.                      |
 | `git_repo_remotes_list`   | read        | Configured remotes with their fetch and push URLs.                 |

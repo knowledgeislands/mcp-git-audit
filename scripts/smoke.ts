@@ -21,6 +21,7 @@ const EXPECTED_TOOLS = [
   // repo-audit (read-only)
   'git_repos_scan',
   'git_repos_audit',
+  'git_repos_audit_roots',
   'git_repo_detail',
   // repo-commit
   'git_repo_diff',

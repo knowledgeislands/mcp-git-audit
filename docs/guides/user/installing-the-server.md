@@ -59,7 +59,7 @@ Then restart the client. The server reads its configuration once at startup and 
 
 ## Confirm it works
 
-Ask the client to list its tools. On a default install you should see five, all read-only: `git_repos_scan`, `git_repos_audit`, `git_repo_detail`, `git_repo_diff`, and `git_repo_remotes_list`. If you see twelve, the access level is not at its default — see [Granting write access](granting-write-access.md). If you see none, see [Troubleshooting](troubleshooting.md).
+Ask the client to list its tools. On a default install you should see six, all read-only: `git_repos_scan`, `git_repos_audit`, `git_repos_audit_roots`, `git_repo_detail`, `git_repo_diff`, and `git_repo_remotes_list`. If you see thirteen, the access level is not at its default — see [Granting write access](granting-write-access.md). If you see none, see [Troubleshooting](troubleshooting.md).
 
 Then ask for something real: _scan `~/dev` and tell me which repositories have uncommitted changes_. A first answer that names repositories you recognise confirms the whole path — client launch, configuration, allow-list, and `git` invocation. [Auditing repositories](auditing-repositories.md) takes it from there.
 

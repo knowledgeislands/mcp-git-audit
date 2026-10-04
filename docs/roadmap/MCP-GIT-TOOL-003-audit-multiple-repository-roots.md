@@ -4,12 +4,12 @@ area: TOOL
 title: Audit multiple repositories
 theme: tool-surface
 horizon: now
-status: ready
+status: awaiting-review
 blocks: []
 blocked_by: []
-baseline_ref: null
+baseline_ref: 60bb7c85f051ca1156f9bf53408bfd58ffd5acf3
 created_at: 2026-07-29T00:37:05Z
-updated_at: 2026-10-04T21:40:00Z
+updated_at: 2026-10-04T22:20:00Z
 ---
 
 ## Goal
@@ -52,10 +52,10 @@ Decided by the Fable reviewer under delegated autonomy (2026-10-04), reversible.
 ## Steps
 
 - [x] Confirm additive tool naming, validation-before-access, overlap/dedup rules, result envelope and limits (Fable reviewer, delegated autonomy, reversible).
-- [ ] Implement `auditRootsWithinSafeRoots` in `src/main/repo-audit/batch.ts`, reusing `scanRoot` and `auditScanWithinRoots`, with deterministic selection before audit.
-- [ ] Register `git_repos_audit_roots` with strict input, the `READ_ONLY` preset and a matching structured output sharing the audit repository and error schemas.
-- [ ] Verify aliases, duplicates, nested overlap, symlink escape, relative and absent roots, non-directory roots, empty roots, truncation across a root boundary, per-repository errors and result order with isolated fixtures.
-- [ ] Update README, the user and developer guides, and regenerate clients through `bun run ki:generate:client` where the generator is available.
+- [x] Implement `auditRootsWithinSafeRoots` in `src/main/repo-audit/batch.ts`, reusing `scanRoot` and `auditScanWithinRoots`, with deterministic selection before audit.
+- [x] Register `git_repos_audit_roots` with strict input, the `READ_ONLY` preset and a matching structured output sharing the audit repository and error schemas.
+- [x] Verify aliases, duplicates, nested overlap, symlink escape, relative and absent roots, non-directory roots, empty roots, truncation across a root boundary, per-repository errors and result order with isolated fixtures.
+- [x] Update README, the user and developer guides, and regenerate clients through `bun run ki:generate:client` where the generator is available.
 
 ## Files touched
 
@@ -86,6 +86,43 @@ Publish the envelope, limits, duplicates, overlaps, partial and error states, an
 ### Roadmap
 
 This record only.
+
+## Review
+
+### Delivered
+
+`git_repos_audit_roots`, an additive read-only tool that scans and audits up to 16 explicitly requested roots in one call under the selected contract: every root authorised and canonicalised before any is walked, canonical duplicates reported in `duplicate_roots`, overlapping roots kept separate, one whole-request `limit` spent in root then scan order, only selected repositories running `git`, and `ok`/`partial`/`error` per root. Existing tools are unchanged. Baseline `60bb7c85f051ca1156f9bf53408bfd58ffd5acf3`; evidence is the implementation commit that follows it.
+
+### Change Summary
+
+- `src/main/repo-audit/batch.ts` (new): `auditRootsWithinSafeRoots(safeRoots, roots, { max_depth, limit })`, exported through the audit barrel. It composes `scanRoot` and `auditScanWithinRoots`, so repository authorisation and Git-metadata checks are exactly the single-root path's; an empty selection skips the audit and reports `audited_at: null`.
+- Material implementation finding: `resolveAgainstSafeRoots` authorises a missing path through its deepest existing ancestor and returns that ancestor. Using its result directly would have walked the parent of an absent root. The batch layer therefore realpaths each authorised root; one that cannot be resolved is a per-root `error` reported under its `~/`-expanded spelling and is never accessed, including through a lexically normalised form that a `..` segment could steer outside the authorised ancestor. A root that resolves is `stat`ed at the start of its processing, as the contract requires, and a non-directory is a per-root `error`.
+- `src/tools/repo-audit/index.ts`: strict input (`roots` 1-16 non-empty strings, `max_depth` 1-8 default 2, `limit` 1-1000 default 100), output schema reusing `auditedRepoSchema` and `auditErrorSchema`, `READ_ONLY` preset and a full description; failures use `errorResult`.
+- Tests: `batch.test.ts` (new, isolated tmp fixtures with `$HOME` pointed at the fixture) covers request order, empty root, `~/` and symlink duplicates, an alias as first request, nested overlap against the shared limit, truncation across a root boundary and an exhausted budget with Git-target proof, absent and non-directory roots alongside a healthy peer, the `..` escape attempt, a per-repository authority error giving `partial`, and relative, escaping and symlink-escaping roots rejecting the request with no Git call; no `fetch` argv is issued. `registration.test.ts` parses the live handler response against the declared output schema and checks input bounds and strictness.
+- Docs and surface: README tool table and overview, user auditing guide ("Auditing several roots at once", with an example envelope), developer architecture guide (batch orchestration and the missing-root finding), tool counts in the installing, troubleshooting, write-access and working-on-the-code guides, `AGENTS.md` naming list, `CHANGELOG.md`, `scripts/smoke.ts` expected tools, and `src/generated/` regenerated through `bun run ki:generate:client` against the local build.
+
+### Verification
+
+- `bunx vitest run src/main/repo-audit/batch.test.ts src/tools/repo-audit/registration.test.ts`: 17 passed.
+- `bun run test:coverage`: 227 tests passed; 100% statements (993/993), branches (394/394), functions (141/141) and lines (862/862).
+- `bunx tsc --noEmit` clean; `bun run build` clean; `bunx biome check .` clean (pre-existing schema-version info only); `bunx knip` exit 0 with the pre-existing configuration hints only.
+- `bun run ki:test:smoke`: passed (13 tools, valid result envelope).
+- `ki repo audit --repo .`: PASS=19 WARN=1 FAIL=0. The warning is TOOL-1, registration order not alphabetical; see Outstanding concerns.
+
+### Outstanding concerns
+
+- TOOL-1 warning: `repo-audit` registers in pipeline order (`git_repos_scan`, `git_repos_audit`, `git_repos_audit_roots`, `git_repo_detail`), which was already non-alphabetical before this item; the new tool is placed beside the audit tool it extends. Reordering would only reshuffle listing order and the generated client, so it is left as an intentional, stable order.
+- Pre-existing, out of scope: `git_repos_scan` given an absent root inside a safe root scans that root's nearest existing ancestor, because it uses `resolveAgainstSafeRoots`'s return value directly. The batch tool does not share the behaviour. A follow-up item could align the single-root tool.
+- A missing root's `root` is its expanded spelling rather than a canonical path, since none exists; such roots deduplicate only on identical spelling.
+- The limit bounds payload and Git work, not elapsed time or filesystem entries visited, as the contract states.
+
+### Post-change review
+
+The goal is met: several authorised roots can be audited in one request with per-root results, truthful omitted counts and isolated failures, without weakening the safe-root or Git-metadata authority model. Scope held to the stated surface; existing tool contracts are unchanged. Regression risk is low; the new path reuses the audited single-root functions and is fully covered. Ready for acceptance review.
+
+### Mini recap
+
+Delivered `git_repos_audit_roots` with full coverage, schema-validated output and regenerated clients; all gates pass with one explained audit warning. The notable finding is that missing roots must not reuse the resolver's ancestor fallback. Proposed learning route: a possible follow-up item for `git_repos_scan`'s missing-root behaviour.
 
 ## Discussion
 
