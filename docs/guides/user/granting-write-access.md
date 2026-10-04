@@ -57,9 +57,15 @@ Remote names and URLs go through tight validation: anything starting with `-` is
 
 All four destructive tools default to `dry_run: true`.
 
-**`git_repo_commit`** stages files and writes a commit. Its dry run is worth understanding precisely: the staging step runs for real, and then `git commit --dry-run` reports what would be committed without writing an object or moving HEAD. Staging is local, reversible index state, and including it in the preview is deliberate — the preview has to reflect what would actually be committed.
+**`git_repo_commit`** commits exactly the files you name, and nothing else. It is built for working trees shared with other people and agents: `paths` is required, and whatever someone else has staged, edited or left untracked stays out of the commit and survives it unchanged.
 
-Its `stage` parameter defaults to `all_tracked`, which is `git add -u` across the whole repository. In a working tree you share with anyone else — another person, another agent — that will sweep up changes that are not yours. Pass `stage: "paths"` with an explicit list when the tree is not exclusively yours. This default is known to be too broad and is being changed; `MCP-GIT-TOOL-006` tracks it.
+The `stage` parameter chooses how the commit is built. The default, `paths`, starts from `HEAD` and takes the working-tree content of each named path, so another actor's staged entries cannot ride along. `prepared_index` commits the index as you staged it, but only when the staged set equals `paths` exactly; otherwise the call refuses and lists the extra and missing paths. The old broad modes `all_tracked`, `all` and `none` have been removed rather than aliased, so a stale client fails validation instead of sweeping up the whole tree: replace `none` with `prepared_index` plus the staged paths, and the others with an explicit `paths` list.
+
+Paths must be literal, repo-relative files. Directories, pathspec magic (`:`, `*`, `?`, `[`), `..` segments and a leading `-` or `/` are rejected, and each path must exist in the working tree or be tracked at `HEAD` - a tracked file you deleted is a valid path and commits the deletion. Every bad path is listed in `rejected_paths` and nothing happens. Named paths that match `HEAD` are reported in `skipped_paths`.
+
+The dry run is a true preview. Both the preview and the commit are built in a temporary index inside the repository's Git directory, which is removed after every call, so a preview leaves your real index byte-for-byte unchanged. After a real commit, only the committed paths' entries in the real index are updated to their committed content, as `git commit --only` would. A preview grants nothing: every call revalidates, calls to one repository are serialised, and a call refuses if `HEAD` moves while it is being prepared.
+
+Hooks run as normal. If a hook changes what gets committed - a pre-commit hook that stages another file, say - the result is `ok: false` with the commit's SHA and `hook_modified_paths`. The commit is kept as made; the server never resets, amends or rewrites it, so deciding what to do with it is yours. A failed hook leaves `HEAD` and the real index as they were.
 
 There is no `--amend`. Amending rewrites history and forces the push flow into force-with-lease territory, so it was left out rather than added quietly.
 

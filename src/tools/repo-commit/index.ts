@@ -57,29 +57,31 @@ const commitInput = z
   .object({
     abs_path: absPathSchema,
     message: commitMessageSchema.describe(
-      'Commit message. Single-line in v1 (no multi-line messages — no `\\n` support).'
+      'Commit message. Single-line in v1 (no multi-line messages - no `\\n` support).'
     ),
     stage: z
-      .enum(['all_tracked', 'all', 'paths', 'none'])
-      .default('all_tracked')
+      .enum(['paths', 'prepared_index'])
+      .default('paths')
       .describe(
-        'What to stage before committing. `all_tracked` → `git add -u`. `all` → `git add -A`. `paths` → `git add -- <paths>` (requires `paths`). `none` → commit the index as-is.'
+        'How the commit is built. `paths` (default): from HEAD plus the working-tree content of exactly the named paths; nothing else already staged is included. `prepared_index`: the current index as-is, only when its staged path set equals `paths` exactly. The broad modes `all_tracked`, `all` and `none` were removed and fail validation.'
       ),
     paths: z
       .array(relPathSchema)
+      .min(1)
       .max(1024)
-      .optional()
-      .describe('Required when `stage === "paths"`, rejected otherwise. Repo-relative file paths.'),
+      .describe(
+        'Required, non-empty. Literal repo-relative file paths: no directories, no pathspec magic (`:`, `*`, `?`, `[`), no `..` segments, no leading `-` or `/`. Each must be present in the working tree or tracked at HEAD (a tracked deletion).'
+      ),
     dry_run: z
       .boolean()
       .default(true)
       .describe(
-        'When true (default), runs `git commit --dry-run` — shows what would be committed without writing an object or moving HEAD. The staging step still runs because the index is local, fully reversible state and the preview needs to reflect it.'
+        'When true (default), runs `git commit --dry-run` against a temporary index - shows what would be committed without writing an object, moving HEAD or changing the real index.'
       ),
     allow_empty: z
       .boolean()
       .default(false)
-      .describe('Pass `--allow-empty`. Default false — empty commits are almost always a mistake.')
+      .describe('Pass `--allow-empty`. Default false - empty commits are almost always a mistake.')
   })
   .strict()
 
@@ -103,11 +105,16 @@ const diffOutput = z.object({
 })
 
 const commitOutput = z.object({
+  ok: z.boolean(),
+  error: z.string().nullable(),
   abs_path: z.string(),
   ran_at: z.string(),
   dry_run: z.boolean(),
-  stage: z.string(),
+  stage: z.enum(['paths', 'prepared_index']),
   staged_paths: z.array(z.string()),
+  skipped_paths: z.array(z.string()),
+  rejected_paths: z.array(z.object({ path: z.string(), reason: z.string() })),
+  hook_modified_paths: z.array(z.string()),
   message: z.string(),
   command: z.string(),
   sha: z.string().nullable(),
@@ -150,27 +157,29 @@ Returns:
   server.registerTool(
     'git_repo_commit',
     {
-      title: 'Stage files and create a commit',
-      description: `Stage a set of files and create a commit. Destructive — writes a commit object and moves HEAD when \`dry_run=false\`. Handles the full add → commit lifecycle in one call so the artifact's "preview → confirm" loop reduces to two MCP calls.
+      title: 'Commit exactly the named paths',
+      description: `Commit exactly the named files. Destructive - writes a commit object and moves HEAD when \`dry_run=false\`. Safe in a working tree shared with other people or agents: nothing outside \`paths\` is staged or committed, and unrelated staged entries in the real index survive.
 
-\`dry_run=true\` (the default) runs the staging step normally but invokes \`git commit --dry-run\` — git prints what would be committed without writing an object or moving HEAD. The index mutation done by the staging step is local-only state and is fully reversible with \`git reset\`; treating it as part of the preview is intentional, because the artifact preview needs to reflect the post-stage state.
+The commit is built in a temporary index (\`GIT_INDEX_FILE\`) under the repository's Git directory, removed after every call. \`stage="paths"\` (default) seeds it from HEAD and adds only the named paths; \`stage="prepared_index"\` copies the real index, but only when its staged path set equals \`paths\` exactly - otherwise the call refuses and lists the extra and missing paths in \`rejected_paths\`. The broad modes \`all_tracked\`, \`all\` and \`none\` no longer exist and fail validation.
 
-\`abs_path\` is revalidated against MCP_GIT_AUDIT_SAFE_ROOTS before any \`git\` call. \`paths\` entries (only allowed when \`stage="paths"\`) must be repo-relative — leading \`-\` / \`/\` and \`..\` segments are rejected as an option-injection guard.
+\`dry_run=true\` (the default) runs \`git commit --dry-run\` against the temporary index: the real index, HEAD and the object store are unchanged. A preview grants no later authority; every call revalidates. After a real commit, the real index entries for exactly the committed paths take their committed content (as \`git commit --only\` does).
 
-No \`--amend\` in v1. Amending rewrites history and complicates the push flow (would need force-with-lease). Adding it later requires an explicit \`amend: true\` flag with its own warning copy.
+Every path is validated before any Git write: literal, repo-relative file paths only - no directories, no pathspec magic (\`:\`, \`*\`, \`?\`, \`[\`), no \`..\`, no leading \`-\` or \`/\` - and each present in the working tree or tracked at HEAD. All failures are listed in \`rejected_paths\` and nothing is done. \`abs_path\` is revalidated against MCP_GIT_AUDIT_SAFE_ROOTS before any \`git\` call.
+
+Calls are serialised per repository; a call refuses if HEAD moves during preparation or a merge, cherry-pick or revert is in progress. Hooks run. If the resulting commit's path set differs from the approved one (for example a pre-commit hook staged another file), the result is \`ok: false\` with the SHA and \`hook_modified_paths\`; the commit is never reset, amended or rewritten. No \`--amend\`.
 
 Required access level: \`destructive\` (MCP_GIT_AUDIT_ACCESS_LEVEL).
 
 Args:
   - abs_path (string): Absolute path to a git repo, must live inside MCP_GIT_AUDIT_SAFE_ROOTS.
   - message (string): Commit message. Single-line in v1.
-  - stage ("all_tracked" | "all" | "paths" | "none"): What to stage before committing. Default "all_tracked".
-  - paths (string[]): Required when \`stage="paths"\`, rejected otherwise. Repo-relative paths.
-  - dry_run (boolean): Pass \`--dry-run\` to git commit. Default true.
+  - stage ("paths" | "prepared_index"): How the commit is built. Default "paths".
+  - paths (string[]): Required, non-empty. Literal repo-relative file paths.
+  - dry_run (boolean): Preview only. Default true.
   - allow_empty (boolean): Pass \`--allow-empty\`. Default false.
 
 Returns:
-  JSON object: { abs_path, ran_at, dry_run, stage, staged_paths, message, command, sha, stdout, stderr }. \`sha\` is the short SHA of the new HEAD, or \`null\` on dry-run.`,
+  JSON object: { ok, error, abs_path, ran_at, dry_run, stage, staged_paths, skipped_paths, rejected_paths: [{ path, reason }], hook_modified_paths, message, command, sha, stdout, stderr }. \`ok\` is false, with \`error\` set, for any refusal or failure. \`staged_paths\` is what the commit (would) contain; \`skipped_paths\` are named paths unchanged from HEAD. \`sha\` is the short SHA of the new commit, or \`null\` on dry run or when no commit was made.`,
       inputSchema: commitInput,
       outputSchema: commitOutput,
       annotations: DESTRUCTIVE_ONESHOT

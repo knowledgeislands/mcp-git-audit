@@ -4,12 +4,12 @@ title: Make commit staging safe
 area: TOOL
 theme: tool-surface
 horizon: next
-status: in-progress
+status: awaiting-review
 blocks: []
 blocked_by: []
 baseline_ref: c9da5636ff0e116a516b6ec3f6e1454e00d188ca
 created_at: 2026-09-19T11:40:44Z
-updated_at: 2026-10-04T18:27:50Z
+updated_at: 2026-10-04T19:02:08Z
 ---
 
 ## Goal
@@ -30,18 +30,18 @@ At `f9becb8`, `git_repo_commit` defaults to `all_tracked` (`git add -u`), expose
 
 ## Steps
 
-- [ ] Inventory the current commit schema, staged-index behaviour, generated client surface, and compatibility expectations.
-- [ ] Replace the `stage` enum with `paths` (default) and `prepared_index`, both requiring a non-empty `paths`; remove `all_tracked`, `all` and `none` without aliases, so a stale caller fails validation loudly.
-- [ ] Validate every path before any Git write: literal, repo-relative, no `..`, no leading `-` or `/`, no `:`, `*`, `?` or `[`, not a directory, and either present in the working tree or tracked at `HEAD`. Report every failure in `rejected_paths` and perform nothing.
-- [ ] Build the commit in a temporary `GIT_INDEX_FILE` under the repository's Git directory, removed in `finally`: for `paths`, seeded from `HEAD` and given only the named paths; for `prepared_index`, a copy of the real index after confirming its staged set equals `paths` exactly. Preview never changes the real index. A real commit then updates the real index for exactly the committed paths to their committed content, so unrelated staged entries are preserved.
-- [ ] Serialise calls per repository, refuse if `HEAD` moved during preparation, and after a real commit compare the committed path set with the approved set and the parent with the prepared `HEAD`; on mismatch return `ok: false` with the SHA and `hook_modified_paths`, never reset or amend.
-- [ ] Return `ok`, `error`, `staged_paths`, `skipped_paths` (named but unchanged) and `rejected_paths` alongside the existing fields.
-- [ ] Add shared-tree, pre-staged-change, dry-run, path-error, prepared-index, hook-addition, failed-hook and temporary-index-cleanup tests across the core and MCP tool boundaries.
-- [ ] Record the contract in a Decision Record, update the tool description and the write-access guide, and regenerate client projections through `bun run ki:generate:client`.
+- [x] Inventory the current commit schema, staged-index behaviour, generated client surface, and compatibility expectations.
+- [x] Replace the `stage` enum with `paths` (default) and `prepared_index`, both requiring a non-empty `paths`; remove `all_tracked`, `all` and `none` without aliases, so a stale caller fails validation loudly.
+- [x] Validate every path before any Git write: literal, repo-relative, no `..`, no leading `-` or `/`, no `:`, `*`, `?` or `[`, not a directory, and either present in the working tree or tracked at `HEAD`. Report every failure in `rejected_paths` and perform nothing.
+- [x] Build the commit in a temporary `GIT_INDEX_FILE` under the repository's Git directory, removed in `finally`: for `paths`, seeded from `HEAD` and given only the named paths; for `prepared_index`, a copy of the real index after confirming its staged set equals `paths` exactly. Preview never changes the real index. A real commit then updates the real index for exactly the committed paths to their committed content, so unrelated staged entries are preserved.
+- [x] Serialise calls per repository, refuse if `HEAD` moved during preparation, and after a real commit compare the committed path set with the approved set and the parent with the prepared `HEAD`; on mismatch return `ok: false` with the SHA and `hook_modified_paths`, never reset or amend.
+- [x] Return `ok`, `error`, `staged_paths`, `skipped_paths` (named but unchanged) and `rejected_paths` alongside the existing fields.
+- [x] Add shared-tree, pre-staged-change, dry-run, path-error, prepared-index, hook-addition, failed-hook and temporary-index-cleanup tests across the core and MCP tool boundaries.
+- [x] Record the contract in a Decision Record, update the tool description and the write-access guide, and regenerate client projections through `bun run ki:generate:client`.
 
 ## Files touched
 
-`src/main/repo-commit/commit.ts` and its test, `src/tools/repo-commit/index.ts`, a tool-boundary test, `src/utils/git-exec.ts` (an optional environment override), `src/generated/client.ts` and `src/generated/types.d.ts` through their generation command, `docs/guides/user/granting-write-access.md`, a new `docs/decisions/ADR-MCP-GIT-001-*` and `docs/decisions/README.md`.
+`src/main/repo-commit/commit.ts` and its test, `src/tools/repo-commit/index.ts`, a tool-boundary test (`src/tools/repo-commit/registration.test.ts`), `src/utils/git-exec.ts` (an optional environment override), `src/generated/client.ts` and `src/generated/types.d.ts` through their generation command, `docs/guides/user/granting-write-access.md`, a new `docs/decisions/ADR-MCP-GIT-001-commit-named-paths-through-an-isolated-index.md` and `docs/decisions/README.md`. `README.md` does not document the stage modes and is unchanged.
 
 ## Verify
 
@@ -90,6 +90,41 @@ Define how hooks may modify the index and selected files. Post-hook verification
 ## Source-confirmed evidence
 
 At reviewed source commit `7bf24cb582162fc8f17c6704754f94010c0b2176`, `src/main/repo-commit/commit.ts` executes staging before the dry-run commit, and `src/tools/repo-commit/index.ts` defaults to all_tracked. The generated type declaration preserves the broad modes. `docs/guides/user/granting-write-access.md` documents the real-index preview effect and broad-default risk. This is a public compatibility change, not an internal cleanup.
+
+## Review
+
+### Delivered
+
+`git_repo_commit` now commits only an explicit, non-empty `paths` list through a temporary `GIT_INDEX_FILE` under the repository's Git directory, removed in `finally`. The `stage` enum is `paths` (default; seeded from `HEAD`) and `prepared_index` (a copy of the real index, used only when its staged set equals `paths`); `all_tracked`, `all` and `none` are removed without aliases. Path validation, per-repository serialisation, `HEAD` revalidation, post-commit path-set and parent checks, and the new response fields are in place. ADR-MCP-GIT-001 records the contract.
+
+### Change Summary
+
+- `src/main/repo-commit/commit.ts`: rewritten core. Validation collects every failure into `rejected_paths` before any Git write (syntax, pathspec magic, `.git` segments, directories, symlinked ancestors, neither present nor tracked at `HEAD`, ignored-and-untracked in `paths` mode). Preview runs `git commit --dry-run` on the temporary index; a real commit runs `git commit` with the temporary index so hooks run, then `git --literal-pathspecs reset -q <sha> -- <committed paths>` updates only the committed entries of the real index. Repository-state refusals return `ok: false`; input-shape and safe-root errors still throw and map to the existing error envelope.
+- `src/utils/git-exec.ts`: optional per-call `env` on `runGitCapture`, merged before the `GIT_TERMINAL_PROMPT=0` guard.
+- `src/tools/repo-commit/index.ts`: new input and output schemas and description.
+- Tests: core suite rewritten (shared tree, pre-staged named and unrelated paths, deletion, skipped and empty, unborn branch, dry-run byte identity, path errors, input errors, merge in progress, prepared-index equal, mismatched and missing index, hook-added path, failed hook, real-index update failure, post-commit `HEAD` move, `HEAD` moved during preparation, preparation failure, concurrency, non-repository); new tool-boundary suite (legacy `stage` values and empty `paths` fail the schema, structured outputs validate).
+- Docs: guide commit section rewritten with migration notes; ADR and decisions index; generated client regenerated.
+
+### Verification
+
+Focused repo-commit suites pass (34 tests). `bun run test` passes (212 tests); `bun run test:coverage` meets the 100% thresholds; `bunx tsc --noEmit`, `bun run build`, `bunx biome check .` (one pre-existing schema-version info only), `bunx knip`, `bunx rumdl check` on changed Markdown, `bun run ki:test:smoke` and `ki repo audit` (PASS, 20 skills) all pass. `bun run ki:generate:client` emitted from the freshly built local `dist/` (the `kit-mcp-git-audit` mcporter entry points at this checkout), and the output carries `"paths" | "prepared_index"` with required `paths`.
+
+### Outstanding concerns
+
+- Serialisation is per server process; other writers are bounded only by Git's locking and the `HEAD` checks.
+- Hook changes are detected, not prevented: the commit exists when `ok: false` is returned. A hook that changes the content of an approved path, without changing the path set, is not flagged.
+- Beyond the Steps, the tool also refuses while a merge, cherry-pick or revert is in progress, because `git commit` would otherwise create a merge commit or adopt the pick's metadata.
+- After a post-commit `HEAD` move the real index is deliberately not updated, so the original commit's paths may show as staged reversals until the operator reconciles them.
+- The regenerated client also reflects the newer installed mcporter's emitter format (inline interface, no `wrapCallResult`), not only this change.
+- Release is a semver-major owner decision and is not part of this item; nothing was published.
+
+### Post-change review
+
+Self-review against the Owner compatibility decision and Hook and failure decisions: every preview and refusal leaves real-index bytes unchanged (asserted in tests); unrelated staged entries survive a real commit; the tool never resets, amends or rewrites a commit; no temporary index survives any tested call, including failures. Literal pathspecs are enforced with `--literal-pathspecs` on `add`, `ls-tree`, `ls-files` and `reset`.
+
+### Mini recap
+
+Breaking but narrowing change to `git_repo_commit`: named paths only, isolated temporary index, truthful preview, hook-modification reporting without rewrite. Ready for owner review and acceptance; a release needs a separate semver-major decision.
 
 ## Discussion
 

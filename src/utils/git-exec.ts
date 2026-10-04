@@ -30,15 +30,24 @@ export interface GitRunResult {
  * progress + the actual update lines on stderr, so callers need it.
  *
  * Non-zero exit codes throw; the caller is expected to map them to a
- * structured result. Use `tryRunGitCapture` when failure is expected.
+ * structured result. `env` adds or overrides environment variables for this
+ * one invocation only.
  */
-export const runGitCapture = async (repo: string, args: string[], timeoutMs: number): Promise<GitRunResult> => {
+export const runGitCapture = async (
+  repo: string,
+  args: string[],
+  timeoutMs: number,
+  env: Readonly<Record<string, string>> = {}
+): Promise<GitRunResult> => {
   const { stdout, stderr } = await execFileP('git', ['--no-optional-locks', '-C', repo, ...args], {
     timeout: timeoutMs,
     maxBuffer: GIT_MAX_BUFFER,
     env: {
       ...process.env,
-      // Disable interactive credential prompts — the server runs under stdio
+      // Caller overrides, e.g. `GIT_INDEX_FILE` for an isolated temporary
+      // index. Applied before the prompt guard so it cannot be disabled.
+      ...env,
+      // Disable interactive credential prompts - the server runs under stdio
       // and has no terminal. Without this, an auth-required remote can stall
       // until the timeout fires.
       GIT_TERMINAL_PROMPT: '0'
