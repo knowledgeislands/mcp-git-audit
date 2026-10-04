@@ -9,7 +9,7 @@ blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-09-19T11:40:44Z
-updated_at: 2026-10-01T19:27:46Z
+updated_at: 2026-10-04T10:57:44Z
 ---
 
 ## Goal
@@ -65,6 +65,20 @@ Update operator and integration guidance for safe path selection and any migrati
 ### Roadmap
 
 No additional roadmap record is expected unless client migration or generated-projection work proves independently deliverable.
+
+## Concrete design proposal
+
+Prefer explicit literal repository-relative file paths, reject pathspec magic and directory expansion, and remove broad staging from the safe default. Preview should use a temporary index and leave real-index bytes unchanged. Prepared-index commits need an explicit complete intended path set rather than silently committing every staged change. Serialise real Git writes, revalidate HEAD, selected content and index state before commit, and preserve unrelated staged entries on success and failure. A preview alone grants no later commit authority.
+
+Compatibility is unresolved: the public schema, generated clients and operator guide currently expose all_tracked, all, paths and none, and explicitly describe preview staging as a real index mutation. Decide rejection versus an exceptional migration route for legacy broad modes, and how existing prepared-index callers migrate. Default changes alone do not discharge this decision.
+
+## Hook and failure decisions
+
+Define how hooks may modify the index and selected files. Post-hook verification must compare the exact resulting committed path set with the approved set. Detection after HEAD advances cannot truthfully promise that no unintended commit occurred; choose prevention/isolation or an explicitly reviewed recovery guarantee. Do not autonomously rewrite shared history to hide a hook-added path. Cover changed HEAD/index between preview and commit, concurrent edits, hook additions, temporary-index cleanup, failed hooks and unrelated pre-staged bytes. Fixture commits require repository-local Git identity, as AGENTS.md specifies.
+
+## Source-confirmed evidence
+
+At reviewed source commit `7bf24cb582162fc8f17c6704754f94010c0b2176`, `src/main/repo-commit/commit.ts` executes staging before the dry-run commit, and `src/tools/repo-commit/index.ts` defaults to all_tracked. The generated type declaration preserves the broad modes. `docs/guides/user/granting-write-access.md` documents the real-index preview effect and broad-default risk. This is a public compatibility change, not an internal cleanup.
 
 ## Discussion
 
