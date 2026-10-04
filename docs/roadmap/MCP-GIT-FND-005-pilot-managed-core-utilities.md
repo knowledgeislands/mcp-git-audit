@@ -32,7 +32,7 @@ Compare exact manifest assets, imports, exports and local extension seams with t
 
 ## Dependencies / blocks
 
-Before any receiver projection, [KI-HARNESS-GOV-133](../../../ki-agentic-harness/docs/roadmap/KI-HARNESS-GOV-133-reject-mcp-projection-ancestor-symlinks.md) must repair and verify ancestor-symlink rejection in the owner Harness. Its observed defect can certify files reached through a symlinked ancestor or propose writes outside the receiver boundary. This is a cross-repository prerequisite in prose, not a receiver blocked_by identifier or a claim that lifecycle acceptance is required once the repair exists.
+Before any receiver projection, [KI-HARNESS-GOV-133](https://github.com/knowledgeislands/ki-agentic-harness/blob/ff6d023be0985ff4d431945fbdf241ef7318b6a3/docs/roadmap/KI-HARNESS-GOV-133-reject-mcp-projection-ancestor-symlinks.md) must repair and verify ancestor-symlink rejection in the owner Harness. Its observed defect can certify files reached through a symlinked ancestor or propose writes outside the receiver boundary. This is a cross-repository prerequisite in prose, not a receiver blocked_by identifier or a claim that lifecycle acceptance is required once the repair exists.
 
 ## Verification proposal
 
