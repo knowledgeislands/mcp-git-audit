@@ -4,12 +4,12 @@ area: TOOL
 title: Audit multiple repositories
 theme: tool-surface
 horizon: now
-status: awaiting-review
+status: done
 blocks: []
 blocked_by: []
 baseline_ref: 60bb7c85f051ca1156f9bf53408bfd58ffd5acf3
 created_at: 2026-07-29T00:37:05Z
-updated_at: 2026-10-04T22:20:00Z
+updated_at: 2026-10-04T20:25:00Z
 ---
 
 ## Goal
@@ -123,6 +123,10 @@ The goal is met: several authorised roots can be audited in one request with per
 ### Mini recap
 
 Delivered `git_repos_audit_roots` with full coverage, schema-validated output and regenerated clients; all gates pass with one explained audit warning. The notable finding is that missing roots must not reuse the resolver's ancestor fallback. Proposed learning route: a possible follow-up item for `git_repos_scan`'s missing-root behaviour.
+
+## Done
+
+Accepted 2026-10-04 on the review packet above after an independent Fable review returned ACCEPT, reproducing the gates (227 tests, 100% coverage, typecheck, Biome, audit PASS with the explained TOOL-1 warning) and confirming every point of the selected contract: authorisation before any walk, absent roots never resolved through the ancestor fallback, canonical deduplication with first position winning, overlap kept separate, one whole-request limit with only selected repositories running `git`, and `ok`/`partial`/`error` semantics. Non-blocking notes only (count fields typed `z.number()` in line with the existing schemas; trailing-slash spellings of an absent root are not deduplicated). Decided by the Fable reviewer under delegated autonomy (2026-10-04), reversible.
 
 ## Discussion
 
