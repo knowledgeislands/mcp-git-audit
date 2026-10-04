@@ -20,19 +20,25 @@ Ask for a scan of a directory inside your safe roots. Two parameters matter.
 
 The walk skips hidden directories and `node_modules` outright, so a deep `.git` inside a dependency or a cache never appears. Each repository comes back with its path relative to the root, its absolute path, its name, and a `group` — the first path segment, or `(root)` for repositories sitting directly in the root. The group is what makes "show me the state of everything under `work/`" a sensible follow-up question.
 
+## Linked worktrees and pointer files
+
+A directory counts as a repository when its `.git` entry is either a directory or a regular file. The file form is how Git marks a linked worktree (`git worktree add`) or a submodule checkout: it holds a single `gitdir: <path>` line naming the metadata directory, which in turn may name a shared common directory through a `commondir` file. The scan lists such directories without reading the pointer; a symlinked `.git` entry is not treated as a repository.
+
+The server does not take a permitted working directory as permission to read wherever its pointer leads. Before any `git` command runs against a repository, the audit and detail tools resolve its `.git` entry, the `gitdir` target and any `commondir` target through symlinks, and require every one of them to lie inside `MCP_GIT_AUDIT_SAFE_ROOTS`. A worktree whose metadata lives elsewhere — a worktree of a repository outside your safe roots, or one created by a tool that keeps its checkouts in a separate cache — is unsupported: the audit reports it in `errors[]` with an `unsupported Git metadata` message and runs no `git` for it. The same message covers malformed, oversized, dangling and cyclic pointers, and a directory with no `.git` entry at all, which would otherwise let `git` borrow an enclosing repository. To audit such a worktree, add a safe root that contains its metadata as well as its working directory.
+
 ## Auditing what you found
 
 Hand the scan result to `git_repos_audit`. For each repository it reports the current branch — or `detached@<short-sha>` when HEAD is detached — the short SHA and subject of the last commit with both an ISO and a relative date, counts of modified and untracked files, whether an `origin` remote and an upstream exist, and how far ahead or behind that upstream the branch is.
 
 Two properties of the result are worth relying on.
 
-**A failing repository does not fail the call.** A corrupt `.git/HEAD`, a permission problem, or a `git` invocation that times out is collected into an `errors[]` array alongside the repositories that did work. A single broken checkout in a tree of two hundred costs you one entry, not the audit.
+**A failing repository does not fail the call.** A corrupt `.git/HEAD`, a permission problem, or a `git` invocation that times out is collected into an `errors[]` array alongside the repositories that did work. A single broken checkout in a tree of two hundred costs you one entry, not the audit. A repository whose Git metadata is unsupported or lies outside the safe roots is reported the same way, without any `git` command being run against it. Each entry carries the repository's relative `path` and a `message`.
 
 **Ahead and behind are as fresh as your last fetch.** This tool reads refs; it does not contact a remote. A repository that looks up to date may simply not have fetched recently. Closing that gap means `git_repo_fetch`, which is a write-level tool — see [Granting write access](granting-write-access.md).
 
 ## Looking at one repository
 
-Once the audit has named something interesting, three tools work on a single repository, each taking the absolute path from the earlier result. That path is re-validated against the safe roots before anything runs: a scan result cannot be edited to reach somewhere the server was never allowed to go.
+Once the audit has named something interesting, three tools work on a single repository, each taking the absolute path from the earlier result. That path is re-validated against the safe roots before anything runs: a scan result cannot be edited to reach somewhere the server was never allowed to go. `git_repo_detail` also authorises the repository's Git metadata, as described under [Linked worktrees and pointer files](#linked-worktrees-and-pointer-files), and fails rather than reading unauthorised metadata.
 
 `git_repo_detail` returns recent commit history and the working-tree file listing. It defaults to 10 commits and will not return more than 50. Asking for a diffstat adds per-commit added/removed/path entries, computed from `git log --numstat`; the count of files touched is always there regardless. This tool degrades rather than throws: if the metadata read times out or `git` fails, the history and working tree still come back, with an `error` field explaining what went missing. A repository with no commits yet returns an empty commit list and no error, which is the correct answer rather than a failure.
 

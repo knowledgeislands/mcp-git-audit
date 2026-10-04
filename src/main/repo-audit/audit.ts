@@ -1,5 +1,7 @@
 import { errMessage } from '../../utils/errors.js'
 import { GIT_LOCAL_TIMEOUT_MS, runGitCapture } from '../../utils/git-exec.js'
+import { resolveAgainstSafeRoots } from '../../utils/paths.js'
+import { resolveGitMetadata } from './metadata.js'
 import type { ScannedRepo, ScanResult } from './scan.js'
 
 // Token unlikely to appear in commit subjects; lets us split %s/%ar/%cI safely.
@@ -133,17 +135,11 @@ export const auditRepo = async (
   }
 }
 
-/**
- * Run per-repo audits over a pre-computed scan result. Idempotent and safe to
- * call multiple times against a cached scan, which is the point of the
- * scan/audit split — the cheap filesystem walk happens once, the more expensive
- * `git` calls can be re-run on demand.
- */
-export const auditScan = async (scan: ScanResult, _opts: AuditOptions): Promise<AuditResult> => {
+const runAudit = async (scan: ScanResult, initialErrors: readonly AuditError[]): Promise<AuditResult> => {
   const audited_at = new Date().toISOString()
   const results = await Promise.all(scan.repos.map((r) => auditRepo(r)))
   const repos: RepoStatus[] = []
-  const errors: AuditError[] = []
+  const errors: AuditError[] = [...initialErrors]
   for (const result of results) {
     if (result.ok) repos.push(result.status)
     else errors.push(result.error)
@@ -153,4 +149,50 @@ export const auditScan = async (scan: ScanResult, _opts: AuditOptions): Promise<
   const out: AuditResult = { root: scan.root, scanned_at: scan.scanned_at, audited_at, repos }
   if (errors.length > 0) out.errors = errors
   return out
+}
+
+/**
+ * Run per-repo audits over a pre-computed scan result. Idempotent and safe to
+ * call multiple times against a cached scan, which is the point of the
+ * scan/audit split — the cheap filesystem walk happens once, the more expensive
+ * `git` calls can be re-run on demand.
+ *
+ * The caller is responsible for authorising every path; prefer
+ * `auditScanWithinRoots`, which does so before any `git` call.
+ */
+export const auditScan = async (scan: ScanResult, _opts: AuditOptions): Promise<AuditResult> => runAudit(scan, [])
+
+/**
+ * Authorise a (possibly cached, caller-supplied) scan against `safeRoots` and
+ * audit it. The root and every `abs_path` are revalidated first; an escaping
+ * path rejects the whole call, so a cached scan cannot widen the boundary.
+ * Each repository's Git metadata (`.git` directory or pointer, `gitdir` and
+ * `commondir` targets) is then authorised by `resolveGitMetadata`; a repository
+ * whose metadata is unsupported or escapes the safe roots is reported in
+ * `errors` and no `git` process runs for it.
+ */
+export const auditScanWithinRoots = async (
+  safeRoots: readonly string[],
+  scan: ScanResult,
+  _opts: AuditOptions
+): Promise<AuditResult> => {
+  const root = await resolveAgainstSafeRoots(scan.root, safeRoots)
+  for (const r of scan.repos) {
+    try {
+      await resolveAgainstSafeRoots(r.abs_path, safeRoots)
+    } catch (err) {
+      throw new Error(`scan.repos[${r.path}].abs_path: ${errMessage(err)}`)
+    }
+  }
+  const authorised: ScannedRepo[] = []
+  const errors: AuditError[] = []
+  for (const r of scan.repos) {
+    try {
+      const metadata = await resolveGitMetadata(safeRoots, r.abs_path)
+      authorised.push({ ...r, abs_path: metadata.work_tree })
+    } catch (err) {
+      errors.push({ path: r.path, message: errMessage(err) })
+    }
+  }
+  return runAudit({ ...scan, root, repos: authorised }, errors)
 }

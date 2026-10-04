@@ -3,6 +3,7 @@ import * as path from 'node:path'
 import { promisify } from 'node:util'
 import { errMessage } from '../../utils/errors.js'
 import { resolveAndLocateAgainstSafeRoots } from '../../utils/paths.js'
+import { resolveGitMetadata } from './metadata.js'
 
 const execFileP = promisify(execFile)
 
@@ -150,8 +151,9 @@ const tryRunGitDetail = async (repo: string, args: string[]): Promise<string | n
 /**
  * Return commit history + working-tree status for a single repo identified by
  * an absolute path. The caller is responsible for ensuring `absPath` has been
- * revalidated against `safeRoots` — but we re-check here as defence in depth.
- * No fetching, no diff content, no cross-repo work.
+ * revalidated against `safeRoots` — but we re-check here as defence in depth,
+ * and authorise the repository's Git metadata (`resolveGitMetadata`) before any
+ * `git` call: unsupported or escaping metadata throws. No fetching, no diff content, no cross-repo work.
  */
 export const repoDetail = async (
   safeRoots: readonly string[],
@@ -159,7 +161,8 @@ export const repoDetail = async (
   opts: RepoDetailOptions
 ): Promise<RepoDetailResult> => {
   const fetched_at = new Date().toISOString()
-  const { resolved, containingRoot } = await resolveAndLocateAgainstSafeRoots(absPath, safeRoots)
+  const { containingRoot } = await resolveAndLocateAgainstSafeRoots(absPath, safeRoots)
+  const resolved = (await resolveGitMetadata(safeRoots, absPath)).work_tree
   const relPath = path.relative(containingRoot, resolved).split(path.sep).join('/')
 
   const requested = Math.min(Math.max(1, Math.trunc(opts.commits)), MAX_COMMITS)

@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/server'
 import { z } from 'zod'
 import type { Config } from '../../config/index.js'
-import { auditScan, repoDetail, type ScanResult, scanRoot } from '../../main/repo-audit/index.js'
+import { auditScanWithinRoots, repoDetail, scanRoot } from '../../main/repo-audit/index.js'
 import { READ_ONLY } from '../../utils/annotations.js'
 import { errMessage } from '../../utils/errors.js'
 import { resolveAgainstSafeRoots } from '../../utils/paths.js'
@@ -135,6 +135,8 @@ const workingTreeSchema = z.object({
   summary: z.object({ modified: z.number(), untracked: z.number() })
 })
 
+const auditErrorSchema = z.object({ path: z.string(), message: z.string() })
+
 const scanOutput = z.object({ root: z.string(), scanned_at: z.string(), repos: z.array(scannedRepoSchema) })
 
 const auditOutput = z.object({
@@ -142,7 +144,7 @@ const auditOutput = z.object({
   scanned_at: z.string(),
   audited_at: z.string(),
   repos: z.array(auditedRepoSchema),
-  errors: z.array(z.string()).optional()
+  errors: z.array(auditErrorSchema).optional()
 })
 
 const detailOutput = z.object({
@@ -210,20 +212,7 @@ Per-repo failures (e.g. corrupt .git/HEAD) are aggregated into the \`errors\` ar
     },
     async ({ scan, include_stale_days }) => {
       try {
-        const rootResolved = await resolveRootArg(cfg.safeRoots, scan.root)
-        if (typeof rootResolved !== 'string') return errorResult('auditing repos', new Error(rootResolved.error))
-
-        const validatedRepos = []
-        for (const r of scan.repos) {
-          try {
-            const absResolved = await resolveAgainstSafeRoots(r.abs_path, cfg.safeRoots)
-            validatedRepos.push({ ...r, abs_path: absResolved })
-          } catch (err) {
-            return errorResult('auditing repos', new Error(`scan.repos[${r.path}].abs_path: ${errMessage(err)}`))
-          }
-        }
-        const validatedScan: ScanResult = { ...scan, root: rootResolved, repos: validatedRepos }
-        return jsonResult(await auditScan(validatedScan, { include_stale_days }))
+        return jsonResult(await auditScanWithinRoots(cfg.safeRoots, scan, { include_stale_days }))
       } catch (err) {
         return errorResult('auditing repos', err)
       }

@@ -8,3 +8,5 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 - Per-repository detail and diff inspection.
 - Gated commit, fetch, pull, and push.
 - Remote listing, addition, removal, and URL changes.
+- Discovery of linked worktrees and other `.git` pointer files, with every `gitdir` and `commondir` target authorised against the safe roots before any `git` call; escaping or malformed metadata is reported as unsupported.
+- `git_repos_audit` declares its `errors[]` entries as `{ path, message }` objects, matching what it returns.

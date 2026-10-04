@@ -29,10 +29,15 @@ const groupAndName = (relPath: string): { group: string; name: string } => {
 }
 
 /**
- * Walk `root` looking for `.git` directories. A repo is any directory that
- * contains `.git` as a subdirectory (worktree-pointer `.git` files are skipped
- * — out of scope for v1). When a repo is found we do not recurse into it.
- * Hidden directories and `node_modules` are skipped. Returns absolute repo paths.
+ * Walk `root` looking for repository roots. A repo is any directory whose
+ * `.git` entry is a directory or a regular file (a linked-worktree or submodule
+ * pointer); symlinked `.git` entries are not treated as repos. When a repo is
+ * found we do not recurse into it. Hidden directories and `node_modules` are
+ * skipped. Returns absolute repo paths.
+ *
+ * Discovery reads directory entries only: it neither parses pointer files nor
+ * authorises the metadata they name. Pointer targets are authorised against
+ * the safe roots by `resolveGitMetadata` before any `git` call.
  *
  * `maxDepth` is the maximum depth (measured from `root`) at which a repo
  * directory may live. With `root=~/dev` and `maxDepth=2`, `~/dev/group/repo`
@@ -56,7 +61,7 @@ export const findRepos = async (root: string, maxDepth: number): Promise<string[
       /* v8 ignore stop */
     }
     const gitEntry = entries.find((e) => e.name === '.git')
-    if (gitEntry?.isDirectory()) {
+    if (gitEntry !== undefined && (gitEntry.isDirectory() || gitEntry.isFile())) {
       if (depth >= 1) repos.push(dir)
       return
     }

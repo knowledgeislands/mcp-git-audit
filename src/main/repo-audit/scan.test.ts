@@ -98,6 +98,39 @@ describe('findRepos', () => {
   })
 })
 
+describe('findRepos with .git pointer files', () => {
+  const ptrRoot = path.join(os.tmpdir(), 'mcp-git-audit-scan-pointers', `run-${process.pid}`)
+
+  beforeAll(async () => {
+    await fs.rm(ptrRoot, { recursive: true, force: true })
+    // A linked worktree (regular `.git` file) and a nested repo inside it that must not be found.
+    await fs.mkdir(path.join(ptrRoot, 'group', 'worktree', 'nested', '.git'), { recursive: true })
+    await fs.writeFile(path.join(ptrRoot, 'group', 'worktree', '.git'), 'gitdir: /elsewhere\n', 'utf-8')
+    // A symlinked `.git` entry is not a repository marker; the walk continues beneath it.
+    await fs.mkdir(path.join(ptrRoot, 'linked', 'child', '.git'), { recursive: true })
+    await fs.symlink(path.join(ptrRoot, 'linked', 'child', '.git'), path.join(ptrRoot, 'linked', '.git'))
+    // A pointer deeper than max_depth is not reached.
+    await fs.mkdir(path.join(ptrRoot, 'a', 'b', 'deep'), { recursive: true })
+    await fs.writeFile(path.join(ptrRoot, 'a', 'b', 'deep', '.git'), 'gitdir: /elsewhere\n', 'utf-8')
+  })
+
+  afterAll(async () => {
+    await fs.rm(ptrRoot, { recursive: true, force: true })
+  })
+
+  it('treats a regular .git file as a repository root without parsing it or recursing into it', async () => {
+    const repos = await findRepos(ptrRoot, 2)
+    const rel = repos.map((r) => path.relative(ptrRoot, r).split(path.sep).join('/')).sort()
+    expect(rel).toEqual(['group/worktree', 'linked/child'])
+  })
+
+  it('honours max_depth for pointer repositories', async () => {
+    const repos = await findRepos(ptrRoot, 3)
+    const rel = repos.map((r) => path.relative(ptrRoot, r).split(path.sep).join('/')).sort()
+    expect(rel).toEqual(['a/b/deep', 'group/worktree', 'linked/child'])
+  })
+})
+
 describe('scanRoot', () => {
   it('returns the scan envelope with sorted repos and absolute paths', async () => {
     const result = await scanRoot(tmpRoot, { max_depth: 2 })

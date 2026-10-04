@@ -35,6 +35,14 @@ Three messages come from the path allow-list, and all three are the security bou
 
 Look at the single repository directly with `git_repo_detail` to see which. If the cause was transient, re-running the audit against the same scan result is cheap — the filesystem walk does not need repeating.
 
+## A repository is reported as `unsupported Git metadata`
+
+Before any `git` command runs, the audit and detail tools check where the repository's Git metadata actually lives. The message names what failed.
+
+`gitdir target escapes the configured safe roots` or `commondir target escapes the configured safe roots` means the directory is a linked worktree or submodule checkout whose metadata lives outside `MCP_GIT_AUDIT_SAFE_ROOTS`. The working directory being permitted does not authorise its metadata. Add a safe root that also contains the metadata (usually the main repository) if you want it audited.
+
+`no .git entry` means the path is not itself a repository root; `git` would otherwise search upward and audit whichever enclosing repository it found. `does not exist`, `is cyclic`, `is malformed`, `exceeds 4096 bytes`, `is not a directory` and `neither a directory nor a regular file` describe a dangling, looping, damaged or symlinked `.git` entry or pointer. Repairing the worktree with `git worktree repair`, or removing a stale one with `git worktree prune` in its main repository, usually resolves these.
+
 ## Something timed out
 
 Local `git` calls are bounded at eight seconds, the metadata read behind `git_repo_detail` at six, and network operations at sixty. Nothing waits longer, by design: a bounded failure is better than a hung conversation.
