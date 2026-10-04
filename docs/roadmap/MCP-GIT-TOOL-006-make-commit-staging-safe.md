@@ -4,12 +4,12 @@ title: Make commit staging safe
 area: TOOL
 theme: tool-surface
 horizon: next
-status: draft
+status: ready
 blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-09-19T11:40:44Z
-updated_at: 2026-10-04T10:57:44Z
+updated_at: 2026-10-04T18:26:33Z
 ---
 
 ## Goal
@@ -22,31 +22,42 @@ The tool currently defaults `stage` to `all_tracked`, implements that as `git ad
 
 ## Boundary
 
-This intake record does not select a replacement API, change the tool, or adopt work. Any later design must preserve an explicit preview flow, path validation, access gating, and compatibility decisions for existing callers.
+`git_repo_commit` only: its core in `src/main/repo-commit/commit.ts`, its MCP schema and description, the generated client projections, and the write-access guide. Explicit preview, path validation and access gating are preserved. No change to `git_repo_diff`, `git_repo_push` or any other tool, and no amend, history rewrite or broad staging mode in any form. No package release.
 
 ## Current state
 
-`git_repo_commit` defaults to `all_tracked`, exposes an `all` mode, and lets dry-run staging mutate the real index. The repository therefore cannot promise that one caller commits only its own paths in a shared working tree.
+At `f9becb8`, `git_repo_commit` defaults to `all_tracked` (`git add -u`), exposes `all` (`git add -A`), `paths` and `none`, and runs the staging step against the real index before `git commit [--dry-run]`, so a preview mutates the index and a default commit absorbs every tracked change in a shared tree. `validateRelPaths` rejects `..`, leading `-` or `/` and NUL/newline, but not pathspec magic or directories. `src/generated/types.d.ts` and `docs/guides/user/granting-write-access.md` describe the broad modes and the real-index preview. A search of the Knowledge Islands workspaces and the chezmoi source found no external caller of `git_repo_commit`.
 
 ## Steps
 
 - [ ] Inventory the current commit schema, staged-index behaviour, generated client surface, and compatibility expectations.
-- [ ] Design an explicit-path-first contract whose preview does not mutate the caller's real index and whose exceptional broad modes cannot be mistaken for the safe default.
-- [ ] Implement path validation, index isolation or equivalent preview safety, and clear results for staged, skipped, and rejected paths.
-- [ ] Add shared-tree, pre-staged-change, dry-run, path-error, and compatibility tests across the core and MCP tool boundaries.
-- [ ] Update the public tool description and regenerate client projections only through their owning generation command.
+- [ ] Replace the `stage` enum with `paths` (default) and `prepared_index`, both requiring a non-empty `paths`; remove `all_tracked`, `all` and `none` without aliases, so a stale caller fails validation loudly.
+- [ ] Validate every path before any Git write: literal, repo-relative, no `..`, no leading `-` or `/`, no `:`, `*`, `?` or `[`, not a directory, and either present in the working tree or tracked at `HEAD`. Report every failure in `rejected_paths` and perform nothing.
+- [ ] Build the commit in a temporary `GIT_INDEX_FILE` under the repository's Git directory, removed in `finally`: for `paths`, seeded from `HEAD` and given only the named paths; for `prepared_index`, a copy of the real index after confirming its staged set equals `paths` exactly. Preview never changes the real index. A real commit then updates the real index for exactly the committed paths to their committed content, so unrelated staged entries are preserved.
+- [ ] Serialise calls per repository, refuse if `HEAD` moved during preparation, and after a real commit compare the committed path set with the approved set and the parent with the prepared `HEAD`; on mismatch return `ok: false` with the SHA and `hook_modified_paths`, never reset or amend.
+- [ ] Return `ok`, `error`, `staged_paths`, `skipped_paths` (named but unchanged) and `rejected_paths` alongside the existing fields.
+- [ ] Add shared-tree, pre-staged-change, dry-run, path-error, prepared-index, hook-addition, failed-hook and temporary-index-cleanup tests across the core and MCP tool boundaries.
+- [ ] Record the contract in a Decision Record, update the tool description and the write-access guide, and regenerate client projections through `bun run ki:generate:client`.
 
 ## Files touched
 
-Expected scope is `src/main/repo-commit/`, `src/tools/repo-commit/`, their tests, the MCP composition surface, and generated client projections when the reviewed public schema changes.
+`src/main/repo-commit/commit.ts` and its test, `src/tools/repo-commit/index.ts`, a tool-boundary test, `src/utils/git-exec.ts` (an optional environment override), `src/generated/client.ts` and `src/generated/types.d.ts` through their generation command, `docs/guides/user/granting-write-access.md`, a new `docs/decisions/ADR-MCP-GIT-001-*` and `docs/decisions/README.md`.
 
 ## Verify
 
-Run the focused repo-commit suites, then `bun run test`, `bun run test:coverage`, `bunx tsc --noEmit`, `bun run build`, `bunx biome check .`, `bunx knip`, and the declared repository audits.
+A dry run leaves the real index byte-identical. A commit with unrelated staged and unstaged changes in the tree contains only the named paths, and those unrelated entries survive unchanged. A broad or legacy `stage` value fails schema validation. A hook that adds a path yields `ok: false` with that path and the SHA, and the commit is not rewritten. No temporary index survives any call. Run the focused repo-commit suites, then `bun run test`, `bun run test:coverage`, `bunx tsc --noEmit`, `bun run build`, `bunx biome check .`, `bunx knip`, and the declared repository audits.
 
 ## Dependencies / blocks
 
-No build-order blocker is known. Readiness requires an explicit compatibility decision for existing callers and a reviewed rule for callers that intentionally want to commit an already prepared index.
+No build-order blocker. The compatibility decision and prepared-index rule are recorded under Owner compatibility decision below. Removing enum values is a breaking change to the public tool schema; any release that carries it is a semver-major decision for the owner and is not part of this item.
+
+## Owner compatibility decision
+
+Decided by the Fable reviewer under delegated autonomy (2026-10-04), reversible. Option (a), a breaking change: remove `all_tracked` and `all`; the `stage` enum becomes `paths` (the default; `paths` required and non-empty) and `prepared_index` (replacing `none`; `paths` required and must equal the currently staged path set exactly, otherwise the call refuses and lists the extra and missing paths). `none` is not aliased, so a stale client fails loudly. Preview and commit both run against a temporary `GIT_INDEX_FILE` in the repository's Git directory, removed in `finally`. Paths are literal, repo-relative files; `..`, a leading `-` or `/`, pathspec magic (`:`, `*`, `?`, `[`) and directories are rejected. Calls are serialised per repository and every call revalidates; a preview grants no later authority. After a commit, the committed path set is compared with `paths`; on mismatch the result is `ok: false` with `hook_modified_paths` and the SHA, and the tool never resets or amends. The response adds `staged_paths`, `skipped_paths` and `rejected_paths`. Write a Decision Record, regenerate `src/generated/*` through the owning command, and update `docs/guides/user/granting-write-access.md`.
+
+Reasoning: no external caller exists (a search of the Knowledge Islands workspaces and the chezmoi source finds only this repository's own documentation, generated client and smoke list), the `ki-git` policy already forbids whole-tree staging, and keeping the broad modes behind an opt-in would preserve exactly the hazard this item removes. Removing enum values narrows write authority. The Git-level effect of the surviving `paths` mode is unchanged, a temporary index holds no durable state, and an owner decision to re-add a broad mode later is additive.
+
+Implementation reading, for review: a temporary index that copies the real index would, in `paths` mode, commit whatever another actor had already staged. In `paths` mode the temporary index is therefore seeded from `HEAD`, and only `prepared_index` copies the real index. "Real index bytes never change" holds for every preview and every refusal; after a real commit the real index entries for exactly the committed paths are set to their committed content, as `git commit --only` does, because leaving them at their pre-commit content would record the reverse of the commit as staged.
 
 ## Documentation impact
 
