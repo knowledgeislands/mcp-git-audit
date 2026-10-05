@@ -4,12 +4,12 @@ area: FND
 title: Pilot managed core utilities
 theme: foundation-tooling
 horizon: now
-status: awaiting-review
+status: done
 blocks: []
 blocked_by: []
 baseline_ref: bf77656619854f650bb0102d1d2c784033243381
 created_at: 2026-10-04T10:57:44Z
-updated_at: 2026-10-05T07:46:07Z
+updated_at: 2026-10-05T07:51:06Z
 ---
 
 # MCP-GIT-FND-005: Pilot managed core utilities
@@ -84,7 +84,7 @@ Declared profile ownership and replaced access-level, annotations and results wi
 
 ### Outstanding concerns
 
-Independent review is pending. This pilot is local source verification, not live-root or fleet-migration evidence. The extra presets do not change registration of existing tools.
+Independent review approved the exact delivery `c598bb58795925d74b496b3a134292db0346b5d5`; no remaining delivery blocker was found. This pilot is local source verification, not live-root or fleet-migration evidence. The extra presets do not change registration of existing tools.
 
 ### Post-change review
 
@@ -93,6 +93,10 @@ Compared managed behavior with the former receiver helpers and existing audit-wr
 ### Mini recap
 
 The receiver pilot is delivered; optional profile adoption in another MCP requires its own scope and evidence. Audit privacy policy remains local. No publication or live Git operation occurred.
+
+## Done
+
+Accepted under the named done-target MCP-GIT-BATCH-001 outcome authority and the principal’s standing instruction to accept reviewed deliveries. Independent reviewer `review_housekeeping` approved exact delivery `c598bb58795925d74b496b3a134292db0346b5d5`, verified manifest bytes and receiver ownership boundaries, and independently reran 40 focused tests. All planned work and required gates are evidenced above. No live operations or publication occurred.
 
 ## Discussion
 
