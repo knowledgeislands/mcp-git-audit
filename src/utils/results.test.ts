@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { errorResult, jsonResult } from './results.js'
+import { errorResult, jsonResult, textResult } from './results.js'
 
 describe('errorResult', () => {
   it('builds the MCP error response shape with an action prefix', () => {
@@ -25,5 +25,18 @@ describe('jsonResult', () => {
     expect(r.resultType).toBe('complete')
     expect(r.content[0].type).toBe('text')
     expect(JSON.parse(r.content[0].text)).toEqual({ a: 1 })
+  })
+  it('retains the same structured payload alongside readable JSON', () => {
+    const payload = { paths: ['a/b'], partial: false }
+    expect(jsonResult(payload).structuredContent).toBe(payload)
+  })
+})
+
+describe('textResult', () => {
+  it('preserves literal text without introducing structured content or an error', () => {
+    expect(textResult('line one\n{"literal":true}')).toEqual({
+      resultType: 'complete',
+      content: [{ type: 'text', text: 'line one\n{"literal":true}' }]
+    })
   })
 })

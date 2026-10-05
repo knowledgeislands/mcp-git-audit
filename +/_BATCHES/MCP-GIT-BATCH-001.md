@@ -13,3 +13,7 @@ policy: safe-local-v1
 ---
 
 # MCP-GIT-BATCH-001
+
+## Run ledger
+
+<!-- ki-batch-run: MCP-GIT-BATCH-001-RUN-001 2790597680deba7236a4a3786bba78d22808f9d6f957cd7efaa57b7cefc83df1 -->

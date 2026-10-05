@@ -4,12 +4,12 @@ area: FND
 title: Pilot managed core utilities
 theme: foundation-tooling
 horizon: now
-status: ready
+status: awaiting-review
 blocks: []
 blocked_by: []
-baseline_ref: null
+baseline_ref: bf77656619854f650bb0102d1d2c784033243381
 created_at: 2026-10-04T10:57:44Z
-updated_at: 2026-10-05T07:38:12Z
+updated_at: 2026-10-05T07:46:07Z
 ---
 
 # MCP-GIT-FND-005: Pilot managed core utilities
@@ -32,11 +32,11 @@ Harness repaired projection ancestor validation in `be73f2fa`, accepted GOV-133 
 
 ## Steps
 
-- [ ] Declare modern-v2-core and replace exactly its three files with manifest-verified bytes.
-- [ ] Extend result and annotation-tier fixtures, retaining local audit-wrapper behavior.
-- [ ] Document managed ownership, deliberate upgrades and rollback.
-- [ ] Verify full gates, exact digests, no-op CONFORM and isolated drift/unsafe-parent checks.
-- [ ] Record full review evidence for independent coordinator acceptance.
+- [x] Declare modern-v2-core and replace exactly its three files with manifest-verified bytes.
+- [x] Extend result and annotation-tier fixtures, retaining local audit-wrapper behavior.
+- [x] Document managed ownership, deliberate upgrades and rollback.
+- [x] Verify full gates, exact digests, no-op CONFORM and isolated drift/unsafe-parent checks.
+- [x] Record full review evidence for independent coordinator acceptance.
 
 ## Files touched
 
@@ -67,6 +67,32 @@ Document managed files, local extensions, upgrades and rollback in the developer
 ### Roadmap
 
 This record owns the one receiver pilot and its evidence; no estate migration is implied.
+
+## Review
+
+### Delivered
+
+Git Audit deliberately adopts modern-v2-core version 1 as the one modern receiver pilot. All three managed files match the canonical manifest exactly; local audit/error/config and Git behavior remain independently owned.
+
+### Change Summary
+
+Declared profile ownership and replaced access-level, annotations and results with exact managed assets. Added text/structured-result and complete annotation-tier coverage. Developer architecture guidance explains extensions, reviewed upgrades and rollback. No tool name, gate tier, remote operation or client schema changed.
+
+### Verification
+
+239 tests in 21 files pass. Coverage has 860/860 lines, 394/394 branches and 142/142 functions. TypeScript, build, modern/legacy smoke, Biome and Knip pass. MCP (including engineering), guides and roadmap audits pass; CONFORM dry-run passes with no writes. A disposable receiver fixture proves modified managed-file refusal and ancestor-symlink refusal. Two repeated context CONFORM calls on the receiver propose zero writes, with all manifest digests exact and required seams present.
+
+### Outstanding concerns
+
+Independent review is pending. This pilot is local source verification, not live-root or fleet-migration evidence. The extra presets do not change registration of existing tools.
+
+### Post-change review
+
+Compared managed behavior with the former receiver helpers and existing audit-wrapper/access fixtures. Tested the new result/preset capabilities and verified exact digests, physical parents and refusal paths. Required checks passed without bypasses.
+
+### Mini recap
+
+The receiver pilot is delivered; optional profile adoption in another MCP requires its own scope and evidence. Audit privacy policy remains local. No publication or live Git operation occurred.
 
 ## Discussion
 

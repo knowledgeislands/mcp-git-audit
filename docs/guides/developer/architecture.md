@@ -79,3 +79,9 @@ The tests that pin these live alongside the code they guard — `src/utils/paths
 Tool names are `<app>_<resource>_<action>` in snake_case with `<app>` fixed at `git`: plural resource for collection operations, singular for single-item ones. The current surface groups as `repo-audit` (`git_repos_scan`, `git_repos_audit`, `git_repos_audit_roots`, `git_repo_detail`), `repo-commit` (`git_repo_diff`, `git_repo_commit`), `repo-remotes` (`git_repo_remotes_list`, `git_repo_remote_set_url`, `git_repo_remote_add`, `git_repo_remote_remove`), and `repo-sync` (`git_repo_fetch`, `git_repo_pull`, `git_repo_push`).
 
 To survey what is registered, `grep registerTool src/tools/*/index.ts`.
+
+## Managed core utilities
+
+This receiver opts into Harness `modern-v2-core` version 1. `src/utils/access-level.ts`, `annotations.ts` and `results.ts` are complete manifest-managed files; their marker and bytes must match the canonical assets. Audit logging, redaction, errors, configuration and Git helpers remain repository-owned. Put extensions in separate local files rather than changing a managed projection.
+
+An upgrade is an intentional reviewed replacement of all changed profile assets, with fixture and full receiver checks. `ki repo conform --skill ki-repo-mcp` creates only missing exact projections and refuses modified files; it cannot perform an upgrade by overwriting them. Roll back profile adoption with the receiver delivery commit's Git history, restoring the prior declaration and helper bytes together. The pilot changes no tool names or access tiers and does not authorise another receiver's migration.

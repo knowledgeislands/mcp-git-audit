@@ -36,6 +36,7 @@ auto_memory = "disabled"
 [skills.ki-repo-project]
 
 [skills.ki-repo-mcp]
+profile = "modern-v2-core"
 
 # -----------------------------------------------------------------------------
 # Governance and runtime
