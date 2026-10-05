@@ -44,6 +44,8 @@ This is the canonical layout we roll out across the MCPs:
 
 To use the code from a script: `const cfg = loadConfig(); await diffRepo(cfg.safeRoots, '/abs/repo', { staged: false, max_lines: 500 })`.
 
+This dependency direction is enforced, not just described: [.dependency-cruiser.ts](./.dependency-cruiser.ts) states each boundary as a named rule and [src/boundaries.test.ts](./src/boundaries.test.ts) cruises the source graph and proves every rule still rejects a deliberate crossing. Tool modules may import only `main/*/index.ts`, `config/index.ts` and the envelope, annotation, path and identifier helpers in `utils/` (`annotations`, `errors`, `git-exec`, `paths`, `results`); `src/generated/` is the emitted client for external consumers and nothing in `src/` imports it. The checker runs from its own install root, `tooling/boundaries`, because dependency-cruiser needs a TypeScript below 7.
+
 ### Naming convention
 
 Tool names follow `<app>_<resource>_<action>` (snake_case) with `<app>` = `git`. Plural resource for collection ops, singular for single-item ops. Current surface:
