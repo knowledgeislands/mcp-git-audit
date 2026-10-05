@@ -26,6 +26,8 @@ jobs:
           export XDG_CACHE_HOME="$KI_ROOT/cache"
           export XDG_STATE_HOME="$KI_ROOT/state"
           mkdir -p "$KI_ROOT"
+          mkdir -p "$XDG_CONFIG_HOME/ki"
+          printf 'mcpServers: []\n' > "$XDG_CONFIG_HOME/ki/mcp-servers.yaml"
           git clone --quiet --depth 1 --branch main https://github.com/knowledgeislands/tools-ki.git "$RUNNER_TEMP/tools-ki-source"
           printf 'KI source commit: %s\n' "$(git -C "$RUNNER_TEMP/tools-ki-source" rev-parse HEAD)"
           (cd "$RUNNER_TEMP/tools-ki-source" && bun install --frozen-lockfile)
