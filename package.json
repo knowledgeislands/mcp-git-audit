@@ -95,7 +95,7 @@
     "ki:server:mcp:inspect": "NODE_ENV=development bunx @modelcontextprotocol/inspector bun src/mcp-server/index.ts",
     "ki:server:mcp:start": "bun run build && node dist/mcp-server/index.js",
     "ki:test:smoke": "bun run build && bun scripts/smoke.ts",
-    "prepare": "husky",
+    "prepare": "husky && bun install --frozen-lockfile --cwd tooling/boundaries",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest"
