@@ -230,33 +230,31 @@ const detailOutput = z.object({
 
 export const registerRepoAuditTools = (server: McpServer, cfg: Config): void => {
   server.registerTool(
-    'git_repos_scan',
+    'git_repo_detail',
     {
-      title: 'Scan a tree for git repositories',
-      description: `Walk a directory tree for .git directories and return repo metadata. Cheap and side-effect-free — no \`git\` invocations. The output is intended to be cached and fed into \`git_repos_audit\` one or more times.
+      title: 'Per-repo commit history and changed-file listing',
+      description: `Return commit history and working-tree status for a single repo identified by an absolute path from a prior \`git_repos_scan\`/\`git_repos_audit\` result. Read-only and cheap — no fetch, no diff content, no cross-repo work.
+
+\`abs_path\` is revalidated against MCP_GIT_AUDIT_SAFE_ROOTS before any \`git\` call; the cache cannot widen the security boundary.
 
 Args:
-  - root (string, optional): Absolute or ~/... path inside one of MCP_GIT_AUDIT_SAFE_ROOTS. Omit to use the single configured safe root.
-  - max_depth (number): Max depth from \`root\` at which a repo dir may live. Default 2.
+  - abs_path (string): Absolute path to a git repo, must live inside one of MCP_GIT_AUDIT_SAFE_ROOTS.
+  - commits (number): Recent commits to return (newest first). Default 10, max 50.
+  - include_diffstat (boolean): When true, include per-commit \`diffstat[]\` from \`git log --numstat\`. Default false. \`files\` count is always returned.
 
 Returns:
-  JSON object: { root, scanned_at, repos: [{ path, abs_path, group, name }] }.
+  JSON object: { abs_path, path, fetched_at, remote_url, commits: [{ sha, subject, author, iso_date, rel_date, files, diffstat? }], working_tree: { modified: [{ status, path }], summary: { modified, untracked } }, error? } where each \`modified[]\` entry's \`status\` is the raw two-character \`git status --porcelain\` code.
 
-Errors:
-  - "root \\"X\\" is not inside any configured safe_root (...)" when the root escapes safe_roots.
-  - "root must be an absolute path or start with ~/" for relative roots.
-  - "root is required when multiple safe_roots are configured" when omitted with multiple safe_roots.`,
-      inputSchema: scanInput,
-      outputSchema: scanOutput,
+Status codes mirror \`git status --porcelain\` verbatim so downstream consumers other than the Cowork artifact can interpret them precisely. Errors (timeout, unborn HEAD on a fresh repo with no commits) surface as a \`commits: []\` result with an \`error\` field rather than throwing.`,
+      inputSchema: detailInput,
+      outputSchema: detailOutput,
       annotations: READ_ONLY
     },
-    async ({ root, max_depth }) => {
+    async ({ abs_path, commits, include_diffstat }) => {
       try {
-        const resolved = await resolveRootArg(cfg.safeRoots, root)
-        if (typeof resolved !== 'string') return errorResult('scanning repos', new Error(resolved.error))
-        return jsonResult(await scanRoot(resolved, { max_depth }))
+        return jsonResult(await repoDetail(cfg.safeRoots, abs_path, { commits, include_diffstat }))
       } catch (err) {
-        return errorResult('scanning repos', err)
+        return errorResult('reading repo detail', err)
       }
     }
   )
@@ -326,31 +324,33 @@ Returns:
   )
 
   server.registerTool(
-    'git_repo_detail',
+    'git_repos_scan',
     {
-      title: 'Per-repo commit history and changed-file listing',
-      description: `Return commit history and working-tree status for a single repo identified by an absolute path from a prior \`git_repos_scan\`/\`git_repos_audit\` result. Read-only and cheap — no fetch, no diff content, no cross-repo work.
-
-\`abs_path\` is revalidated against MCP_GIT_AUDIT_SAFE_ROOTS before any \`git\` call; the cache cannot widen the security boundary.
+      title: 'Scan a tree for git repositories',
+      description: `Walk a directory tree for .git directories and return repo metadata. Cheap and side-effect-free — no \`git\` invocations. The output is intended to be cached and fed into \`git_repos_audit\` one or more times.
 
 Args:
-  - abs_path (string): Absolute path to a git repo, must live inside one of MCP_GIT_AUDIT_SAFE_ROOTS.
-  - commits (number): Recent commits to return (newest first). Default 10, max 50.
-  - include_diffstat (boolean): When true, include per-commit \`diffstat[]\` from \`git log --numstat\`. Default false. \`files\` count is always returned.
+  - root (string, optional): Absolute or ~/... path inside one of MCP_GIT_AUDIT_SAFE_ROOTS. Omit to use the single configured safe root.
+  - max_depth (number): Max depth from \`root\` at which a repo dir may live. Default 2.
 
 Returns:
-  JSON object: { abs_path, path, fetched_at, remote_url, commits: [{ sha, subject, author, iso_date, rel_date, files, diffstat? }], working_tree: { modified: [{ status, path }], summary: { modified, untracked } }, error? } where each \`modified[]\` entry's \`status\` is the raw two-character \`git status --porcelain\` code.
+  JSON object: { root, scanned_at, repos: [{ path, abs_path, group, name }] }.
 
-Status codes mirror \`git status --porcelain\` verbatim so downstream consumers other than the Cowork artifact can interpret them precisely. Errors (timeout, unborn HEAD on a fresh repo with no commits) surface as a \`commits: []\` result with an \`error\` field rather than throwing.`,
-      inputSchema: detailInput,
-      outputSchema: detailOutput,
+Errors:
+  - "root \\"X\\" is not inside any configured safe_root (...)" when the root escapes safe_roots.
+  - "root must be an absolute path or start with ~/" for relative roots.
+  - "root is required when multiple safe_roots are configured" when omitted with multiple safe_roots.`,
+      inputSchema: scanInput,
+      outputSchema: scanOutput,
       annotations: READ_ONLY
     },
-    async ({ abs_path, commits, include_diffstat }) => {
+    async ({ root, max_depth }) => {
       try {
-        return jsonResult(await repoDetail(cfg.safeRoots, abs_path, { commits, include_diffstat }))
+        const resolved = await resolveRootArg(cfg.safeRoots, root)
+        if (typeof resolved !== 'string') return errorResult('scanning repos', new Error(resolved.error))
+        return jsonResult(await scanRoot(resolved, { max_depth }))
       } catch (err) {
-        return errorResult('reading repo detail', err)
+        return errorResult('scanning repos', err)
       }
     }
   )
