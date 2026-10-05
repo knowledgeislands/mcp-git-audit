@@ -3,47 +3,73 @@ id: MCP-GIT-FND-005
 area: FND
 title: Pilot managed core utilities
 theme: foundation-tooling
-horizon: triage
-status: draft
+horizon: now
+status: ready
 blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-10-04T10:57:44Z
-updated_at: 2026-10-04T10:57:44Z
+updated_at: 2026-10-05T07:38:12Z
 ---
 
 # MCP-GIT-FND-005: Pilot managed core utilities
 
 ## Goal
 
-Prove that Git Audit's shared access gate, annotation vocabulary and result envelopes can use the managed modern-v2-core profile without changing tool behavior or local audit privacy policy.
+Prove Git Audit's access gate, annotation vocabulary and result envelopes can use modern-v2-core without changing tool behavior or local audit privacy policy.
 
 ## Context
 
-The [Harness shared-code standard](../../../ki-agentic-harness/skills/repo-structure/ki-repo-mcp/references/standards-mcp-shared-code.md) selects Git Audit as the modern pilot because it already has utility fixtures and a narrow result surface. No existing receiver roadmap or trade record owns profile adoption. Current local results, annotations and access gate remain unmanaged; adoption is optional and requires a deliberate receiver declaration.
+The Harness shared-code standard selects Git Audit as the modern pilot. The user on 2026-10-05 instructed completion of all MCP roadmap items and maximal delegation; that current outcome authority admits this one bounded receiver opt-in. Optional managed-file ownership and replacement are explicit in this plan, without fleet migration or publication.
 
 ## Boundary
 
-One receiver pilot only. Do not publish a package, create an estate-wide migration, manage audit-log.ts, replace Git URL redaction, adopt a shared audit engine or rewrite locally owned seams. Preserve the installed tool names, access-tier behavior, SDK result semantics and configuration injection. Triage capture is not profile opt-in or implementation authority.
+Declare the existing modern-v2-core profile and replace only its three exact manifest assets. Keep audit logging, errors, config, Git helpers and redaction repository-owned. Preserve installed tool names, access tiers and result envelopes. No SDK/client migration, remote Git operation or package publication.
 
-## Proposed shaping
+## Current state
 
-Compare exact manifest assets, imports, exports and local extension seams with the current utilities. Preserve required local config/errors/audit seams as separate regular files, and prove the canonical profile's complete annotation vocabulary does not widen registered access. Agree explicit profile opt-in and migration/rollback before replacing utilities; CONFORM's missing-only behavior is not overwrite authority for current files. Run focused fixtures and full receiver gates, verify projection digest markers, drift detection, unsafe-path refusal and repeated-CONFORM idempotence, then document the observed pilot outcome for later receivers.
+Harness repaired projection ancestor validation in `be73f2fa`, accepted GOV-133 in `ac4e7c33`, then pruned it; the prerequisite is satisfied. The unmanaged local helpers already match the canonical behavior, with additional canonical textResult and remote annotation presets requiring coverage.
+
+## Steps
+
+- [ ] Declare modern-v2-core and replace exactly its three files with manifest-verified bytes.
+- [ ] Extend result and annotation-tier fixtures, retaining local audit-wrapper behavior.
+- [ ] Document managed ownership, deliberate upgrades and rollback.
+- [ ] Verify full gates, exact digests, no-op CONFORM and isolated drift/unsafe-parent checks.
+- [ ] Record full review evidence for independent coordinator acceptance.
+
+## Files touched
+
+`.ki.toml`, `src/utils/access-level.ts`, `src/utils/annotations.ts`, `src/utils/results.ts`, focused utility tests, developer architecture guidance and this record. Audit/error/config seams remain local.
+
+## Verify
+
+Focused utility tests, full tests/coverage, TypeScript, build/smoke, Biome and Knip run sequentially. MCP/engineering/guides/roadmap audits validate the changed contract. Manifest digests must remain exact after formatting/hooks. Disposable receiver checks prove modified-file drift and ancestor refusal; repeated missing-only CONFORM must preserve exact file hashes.
 
 ## Dependencies / blocks
 
-Before any receiver projection, [KI-HARNESS-GOV-133](https://github.com/knowledgeislands/ki-agentic-harness/blob/ff6d023be0985ff4d431945fbdf241ef7318b6a3/docs/roadmap/KI-HARNESS-GOV-133-reject-mcp-projection-ancestor-symlinks.md) must repair and verify ancestor-symlink rejection in the owner Harness. Its observed defect can certify files reached through a symlinked ancestor or propose writes outside the receiver boundary. This is a cross-repository prerequisite in prose, not a receiver blocked_by identifier or a claim that lifecycle acceptance is required once the repair exists.
+GOV-133's ancestor repair is satisfied by immutable Harness history. No remaining delivery dependency. Later migrations belong to their own receivers.
 
-## Verification proposal
+## Documentation impact
 
-Use fixture-only utility and tool-registration tests, typecheck, full tests/coverage, build and smoke checks, then focused MCP/shared-code, engineering, guides and roadmap audits. Compare before/after access tiers, annotations and result envelopes; retain Git URL sanitization and audit error privacy checks. No live roots, remote Git operations or publishing.
+### Decision Records
+
+None; existing profile ownership is accepted through this explicitly scoped outcome delivery.
+
+### Specifications
+
+The existing shared-code manifest is the exact projection contract; tool behavior does not change.
+
+### Guides
+
+Document managed files, local extensions, upgrades and rollback in the developer architecture guide.
+
+### Roadmap
+
+This record owns the one receiver pilot and its evidence; no estate migration is implied.
 
 ## Discussion
 
-### Receiver authority
+### Authority and preservation
 
-Keep this unadopted Triage/Draft until the receiver chooses the bounded pilot and its execution plan. The Harness owns assets and projection safety; Git Audit owns migration, local behavior and acceptance.
-
-### Sequencing
-
-Resolve Harness projection safety before managed writes. Tool-surface plans remain independent, but coordinate shared result/schema edits and generated client validation to avoid concealing contract drift inside the pilot.
+The current completion directive admits the pilot's declared profile ownership. The Harness owns exact assets; Git Audit owns adoption and local seams. Missing-only CONFORM cannot overwrite existing files, so this approved migration deliberately replaces them and retains rollback in Git history.
