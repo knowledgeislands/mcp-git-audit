@@ -1,6 +1,6 @@
 # Working on the code
 
-Set up the repository, run the server from source, and get a change through every gate that CI will apply to it.
+By the end of this guide you can set up the repository, run the server from source, and get a change through every gate that CI will apply to it.
 
 ## Setup
 
