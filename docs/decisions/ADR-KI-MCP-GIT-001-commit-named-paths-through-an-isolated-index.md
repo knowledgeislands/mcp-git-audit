@@ -1,5 +1,5 @@
 ---
-id: ADR-MCP-GIT-001
+id: ADR-KI-MCP-GIT-001
 title: 'Commit named paths through an isolated index'
 date: 2026-10-04
 status: current
@@ -7,7 +7,7 @@ decision_type: architecture
 decision_type_url: https://knowledgeislands.info/specifications/decision-records/adr
 ---
 
-# ADR-MCP-GIT-001: Commit named paths through an isolated index
+# ADR-KI-MCP-GIT-001: Commit named paths through an isolated index
 
 ## Context
 
