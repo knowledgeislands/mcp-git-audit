@@ -1,6 +1,6 @@
 // @ts-nocheck
 // Generated on 2026-10-04T20:13:37.652Z by @knowledgeislands/mcp-git-audit@0.9.0
-// Server: kit-mcp-git-audit
+// Server: mcp-git-audit
 // Source: /Users/krisbrown/.mcporter/mcporter.json
 // Transport: STDIO /Users/krisbrown/.local/share/mise/shims/node /Users/krisbrown/workspaces/kit/knowledgeislands/mcp-git-audit/dist/mcp-server/index.js
 
@@ -418,7 +418,7 @@ export async function createKitMcpGitAuditClient(options: CreateClientOptions = 
     rootDir: options.rootDir,
   }));
   const ownsRuntime = !options.runtime;
-  const proxy = createServerProxy(runtime, "kit-mcp-git-audit");
+  const proxy = createServerProxy(runtime, "mcp-git-audit");
   const tools = proxy as typeof proxy & { [K in keyof KitMcpGitAuditTools]: (params: unknown) => Promise<CallResult> };
   const client: KitMcpGitAuditClient = {
     async git_repos_scan(params) {
@@ -475,7 +475,7 @@ export async function createKitMcpGitAuditClient(options: CreateClientOptions = 
 
     async close() {
       if (ownsRuntime) {
-        await runtime.close("kit-mcp-git-audit").catch(() => {});
+        await runtime.close("mcp-git-audit").catch(() => {});
       }
     },
   };

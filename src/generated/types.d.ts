@@ -1,5 +1,5 @@
 // Generated on 2026-10-04T20:13:37.652Z by @knowledgeislands/mcp-git-audit@0.9.0
-// Server: kit-mcp-git-audit
+// Server: mcp-git-audit
 // Source: /Users/krisbrown/.mcporter/mcporter.json
 // Transport: STDIO /Users/krisbrown/.local/share/mise/shims/node /Users/krisbrown/workspaces/kit/knowledgeislands/mcp-git-audit/dist/mcp-server/index.js
 

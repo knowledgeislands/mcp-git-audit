@@ -90,7 +90,7 @@
     "build": "tsc -p tsconfig.build.json",
     "clean": "rm -rf {dist,node_modules}",
     "ki:deps:update": "bun update --latest",
-    "ki:generate:client": "mcporter emit-ts kit-mcp-git-audit --mode client --out src/generated/client.ts --types-out src/generated/types.d.ts && printf '// @ts-nocheck\\n' | cat - src/generated/client.ts > /tmp/gen-tmp.ts && mv /tmp/gen-tmp.ts src/generated/client.ts",
+    "ki:generate:client": "mcporter emit-ts mcp-git-audit --mode client --out src/generated/client.ts --types-out src/generated/types.d.ts && printf '// @ts-nocheck\\n' | cat - src/generated/client.ts > /tmp/gen-tmp.ts && mv /tmp/gen-tmp.ts src/generated/client.ts",
     "ki:server:mcp:dev": "NODE_ENV=development bun --watch src/mcp-server/index.ts",
     "ki:server:mcp:inspect": "NODE_ENV=development bunx @modelcontextprotocol/inspector bun src/mcp-server/index.ts",
     "ki:server:mcp:start": "bun run build && node dist/mcp-server/index.js",
