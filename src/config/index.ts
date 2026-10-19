@@ -86,10 +86,11 @@ export interface Config {
   auditLogKeep: number
 }
 
-// Default to the user's home dir when the env var is unset or empty.
-// Home is a sensible upper bound — the user already owns everything in it, and
-// it keeps the tool from reaching into /etc, /opt, or other system trees.
-const DEFAULT_SAFE_ROOTS = '~'
+// Default to ~/workspaces when the env var is unset or empty: the
+// ~/workspaces/<territory>/<repository> layout every Knowledge Islands
+// workstation uses. A missing default root is not an error; scans of it are
+// empty, as for any missing configured root.
+const DEFAULT_SAFE_ROOTS = '~/workspaces'
 
 const parseSafeRoots = (raw: string | undefined): readonly string[] => {
   const source = raw === undefined || raw.trim() === '' ? DEFAULT_SAFE_ROOTS : raw

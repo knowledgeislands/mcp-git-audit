@@ -23,10 +23,12 @@ bun run build
 
 `MCP_GIT_AUDIT_SAFE_ROOTS` is a colon-separated list of directories the server may walk. It is the server's entire security boundary: every `root` argument, and every absolute path handed back to a later call, must equal or live inside one of these entries after `~` expansion and symlink resolution. A path that escapes them is refused before any `git` runs.
 
-Unset, it defaults to `~` — your whole home directory. That is deliberately a bound rather than a recommendation: it keeps the server out of `/etc` and `/opt`, but it does not keep it out of anything of yours. Name the directories you actually keep code in:
+Unset, it defaults to `~/workspaces`, the parent of the `~/workspaces/<territory>/<repository>` layout Knowledge Islands workstations use; the `max_depth` default of 2 reaches every repository in it. If that directory does not exist, the server still starts: scans of it return nothing, and `git_repos_audit_roots` reports the root as missing. It never falls back to a wider root.
+
+Add any root outside `~/workspaces` explicitly, alongside it — the chezmoi source, for example:
 
 ```text
-MCP_GIT_AUDIT_SAFE_ROOTS=~/dev:~/work
+MCP_GIT_AUDIT_SAFE_ROOTS=~/workspaces:~/.local/share/chezmoi
 ```
 
 Two habits are worth forming here. Point at the parent of your repositories, not at a single repository, because the walk is what makes the server useful. And keep the list short: each entry widens what a confused or adversarial prompt can ask about.
@@ -44,7 +46,7 @@ For Claude Desktop, add the server to `claude_desktop_config.json`:
       "command": "node",
       "args": ["/absolute/path/to/mcp-git-audit/dist/mcp-server/index.js"],
       "env": {
-        "MCP_GIT_AUDIT_SAFE_ROOTS": "~/dev"
+        "MCP_GIT_AUDIT_SAFE_ROOTS": "~/workspaces"
       }
     }
   }
@@ -61,7 +63,7 @@ Then restart the client. The server reads its configuration once at startup and 
 
 Ask the client to list its tools. On a default install you should see six, all read-only: `git_repos_scan`, `git_repos_audit`, `git_repos_audit_roots`, `git_repo_detail`, `git_repo_diff`, and `git_repo_remotes_list`. If you see thirteen, the access level is not at its default — see [Granting write access](granting-write-access.md). If you see none, see [Troubleshooting](troubleshooting.md).
 
-Then ask for something real: _scan `~/dev` and tell me which repositories have uncommitted changes_. A first answer that names repositories you recognise confirms the whole path — client launch, configuration, allow-list, and `git` invocation. [Auditing repositories](auditing-repositories.md) takes it from there.
+Then ask for something real: _scan `~/workspaces` and tell me which repositories have uncommitted changes_. A first answer that names repositories you recognise confirms the whole path — client launch, configuration, allow-list, and `git` invocation. [Auditing repositories](auditing-repositories.md) takes it from there.
 
 ## Changing the configuration later
 

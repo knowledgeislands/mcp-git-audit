@@ -9,12 +9,12 @@ const load = (extra: Record<string, string> = {}) => loadConfig({ ...extra })
 
 describe('loadConfig', () => {
   describe('safeRoots', () => {
-    it('defaults to the user home directory when env var is unset', () => {
-      expect(load().safeRoots).toEqual([os.homedir()])
+    it('defaults to ~/workspaces when env var is unset', () => {
+      expect(load().safeRoots).toEqual([path.join(os.homedir(), 'workspaces')])
     })
 
-    it('defaults to the user home directory when env var is empty', () => {
-      expect(load({ MCP_GIT_AUDIT_SAFE_ROOTS: '   ' }).safeRoots).toEqual([os.homedir()])
+    it('defaults to ~/workspaces when env var is empty', () => {
+      expect(load({ MCP_GIT_AUDIT_SAFE_ROOTS: '   ' }).safeRoots).toEqual([path.join(os.homedir(), 'workspaces')])
     })
 
     it('expands a bare ~ to the home directory', () => {

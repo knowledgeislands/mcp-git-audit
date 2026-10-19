@@ -33,7 +33,7 @@ Set it in the client's `env` block and restart the client:
       "command": "node",
       "args": ["/absolute/path/to/mcp-git-audit/dist/mcp-server/index.js"],
       "env": {
-        "MCP_GIT_AUDIT_SAFE_ROOTS": "~/dev",
+        "MCP_GIT_AUDIT_SAFE_ROOTS": "~/workspaces",
         "MCP_GIT_AUDIT_ACCESS_LEVEL": "write"
       }
     }

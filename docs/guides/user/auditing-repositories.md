@@ -16,7 +16,7 @@ Ask for a scan of a directory inside your safe roots. Two parameters matter.
 
 `root` names the directory to walk. It may be omitted only when exactly one entry is configured in `MCP_GIT_AUDIT_SAFE_ROOTS`; with several configured, omitting it is an error rather than a guess.
 
-`max_depth` bounds how deep below `root` a repository may be found, defaulting to 2 and capped at 8. The default suits the common `~/dev/<org>/<repo>` layout. Raise it when your repositories nest deeper than that, and expect the walk to cost more when you do.
+`max_depth` bounds how deep below `root` a repository may be found, defaulting to 2 and capped at 8. The default suits the `~/workspaces/<territory>/<repository>` layout. Raise it when your repositories nest deeper than that, and expect the walk to cost more when you do.
 
 The walk skips hidden directories and `node_modules` outright, so a deep `.git` inside a dependency or a cache never appears. Each repository comes back with its path relative to the root, its absolute path, its name, and a `group` — the first path segment, or `(root)` for repositories sitting directly in the root. The group is what makes "show me the state of everything under `work/`" a sensible follow-up question.
 

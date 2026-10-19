@@ -5,13 +5,13 @@ title: Ground roots in workspaces
 purpose: corrective
 kind: deliver
 horizon: now
-status: ready
+status: awaiting-review
 size: s
 blocks: []
 blocked_by: []
-baseline_ref: null
+baseline_ref: 5e946c4e05b473eb7e43e0b5f10080a46a9f807f
 created_at: 2026-10-19T06:49:00Z
-updated_at: 2026-10-19T23:20:00Z
+updated_at: 2026-10-19T23:30:00Z
 ---
 
 # Ground roots in workspaces
@@ -42,10 +42,10 @@ Read on 20 October 2026: an unset or blank `MCP_GIT_AUDIT_SAFE_ROOTS` still reso
 
 ## Steps
 
-- [ ] Change `DEFAULT_SAFE_ROOTS` to `~/workspaces`, with its comment, and update both default tests in `src/config/index.test.ts`.
-- [ ] Move `.env.example`, `claude-config-sample.json`, and the user guides (installing, granting write access, auditing repositories) and `docs/guides/README.md` to the `~/workspaces/<territory>/<repository>` layout, saying that the `max_depth` default of 2 fits it.
-- [ ] In the installing guide, state the missing-root behaviour decided below, and show how to add a root outside `~/workspaces`, such as `~/.local/share/chezmoi`.
-- [ ] Add a changelog line if the repository keeps an unreleased section, and run the gate.
+- [x] Change `DEFAULT_SAFE_ROOTS` to `~/workspaces`, with its comment, and update both default tests in `src/config/index.test.ts`.
+- [x] Move `.env.example`, `claude-config-sample.json`, and the user guides (installing, granting write access, auditing repositories) and `docs/guides/README.md` to the `~/workspaces/<territory>/<repository>` layout, saying that the `max_depth` default of 2 fits it.
+- [x] In the installing guide, state the missing-root behaviour decided below, and show how to add a root outside `~/workspaces`, such as `~/.local/share/chezmoi`.
+- [x] Add a changelog line if the repository keeps an unreleased section, and run the gate.
 
 ## Files touched
 
@@ -80,6 +80,38 @@ The installing, granting-write-access and auditing guides and the guides index m
 ### Roadmap
 
 This record moves to Awaiting review at delivery.
+
+## Review
+
+### Delivered
+
+An unset or blank `MCP_GIT_AUDIT_SAFE_ROOTS` now defaults to `~/workspaces`, and every example and guide uses the `~/workspaces/<territory>/<repository>` layout. Baseline `5e946c4e05b473eb7e43e0b5f10080a46a9f807f`; the delivery commit follows it. The deployed chezmoi configuration is untouched.
+
+### Change Summary
+
+- `src/config/index.ts`: `DEFAULT_SAFE_ROOTS` is `~/workspaces`; the comment states the missing-root behaviour.
+- `src/config/index.test.ts`: both default tests expect `~/workspaces`.
+- `.env.example`, `claude-config-sample.json`, the guides index and the installing, granting-write-access and auditing guides: `~/workspaces` examples; the installing guide states the missing-root behaviour and shows adding `~/.local/share/chezmoi`.
+- `CHANGELOG.md`: one Unreleased line.
+- No deviation from the plan.
+
+### Verification
+
+- `bun run test`: 247 of 247 pass. `bun run test:coverage`: 100%. `bun run ki:test:smoke`: pass.
+- `ki repo audit --repo .`: no failures; three pre-existing warnings (`.rumdl.toml` drift, Claude Desktop binding, inline CI `KI_VERSION` pin).
+- No guide or example names `~/dev` or the home-directory default.
+
+### Outstanding concerns
+
+None for this record. Collapsing the deployed per-territory list into `~/workspaces` stays with the dotfiles owner, as Discussion says.
+
+### Post-change review
+
+The change narrows the unset default only; containment, authorisation and the access gate are unchanged, and an explicit setting behaves as before.
+
+### Mini recap
+
+Default root moved from `~` to `~/workspaces` with docs; missing-root behaviour reuses the existing empty-scan path, decided under HIGH-APPLY.
 
 ## Discussion
 

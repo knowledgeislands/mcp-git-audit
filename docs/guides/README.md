@@ -15,7 +15,7 @@ There is no separate operator audience, and that is deliberate. This server is a
 
 Two things are worth knowing before the first run.
 
-The server can only ever reach inside `MCP_GIT_AUDIT_SAFE_ROOTS`. Every path argument — including a path handed back from an earlier result — is re-validated against that allow-list, after `~` expansion and symlink resolution, before any `git` runs. Left unset, the allow-list defaults to your entire home directory, which is broad; [Installing the server](user/installing-the-server.md) covers narrowing it.
+The server can only ever reach inside `MCP_GIT_AUDIT_SAFE_ROOTS`. Every path argument — including a path handed back from an earlier result — is re-validated against that allow-list, after `~` expansion and symlink resolution, before any `git` runs. Left unset, the allow-list defaults to `~/workspaces`; [Installing the server](user/installing-the-server.md) covers narrowing it.
 
 The server is read-only until you say otherwise. `MCP_GIT_AUDIT_ACCESS_LEVEL` defaults to `read`, and the tools that change anything are not registered at all at that level — a client cannot call what was never advertised. [Granting write access](user/granting-write-access.md) covers what changes when you raise it, and why that is a different safeguard from the `dry_run` flag.
 
