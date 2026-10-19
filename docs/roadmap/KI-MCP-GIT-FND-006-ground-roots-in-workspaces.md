@@ -2,12 +2,16 @@
 id: KI-MCP-GIT-FND-006
 area: FND
 title: Ground roots in workspaces
-status: triage
+purpose: corrective
+kind: deliver
+horizon: now
+status: ready
+size: s
 blocks: []
 blocked_by: []
 baseline_ref: null
 created_at: 2026-10-19T06:49:00Z
-updated_at: 2026-10-19T06:49:00Z
+updated_at: 2026-10-19T23:20:00Z
 ---
 
 # Ground roots in workspaces
@@ -32,15 +36,58 @@ In scope: change the unset default from `~` to `~/workspaces` with its test; mov
 
 Out of scope: the chezmoi-rendered configuration, which the dotfiles repository owns; whether it collapses its per-territory list into `~/workspaces` is that repository's call. Also out of scope: the Kit Git Repo Audit live artifact in Personal Principal, which has its own handoff, and any change to containment, metadata authorisation or the access-level gate.
 
+## Current state
+
+Read on 20 October 2026: an unset or blank `MCP_GIT_AUDIT_SAFE_ROOTS` still resolves to `~` (`src/config/index.ts`, `DEFAULT_SAFE_ROOTS`), and `src/config/index.test.ts` pins it twice. The walk in `src/main/repo-audit/scan.ts` already treats a missing directory as an empty subtree, and `git_repos_audit_roots` already reports a missing root per root, without failing the call. So a default root that does not exist needs no new code path.
+
+## Steps
+
+- [ ] Change `DEFAULT_SAFE_ROOTS` to `~/workspaces`, with its comment, and update both default tests in `src/config/index.test.ts`.
+- [ ] Move `.env.example`, `claude-config-sample.json`, and the user guides (installing, granting write access, auditing repositories) and `docs/guides/README.md` to the `~/workspaces/<territory>/<repository>` layout, saying that the `max_depth` default of 2 fits it.
+- [ ] In the installing guide, state the missing-root behaviour decided below, and show how to add a root outside `~/workspaces`, such as `~/.local/share/chezmoi`.
+- [ ] Add a changelog line if the repository keeps an unreleased section, and run the gate.
+
+## Files touched
+
+- `src/config/index.ts`, `src/config/index.test.ts`.
+- `.env.example`, `claude-config-sample.json`, `docs/guides/README.md`, `docs/guides/user/installing-the-server.md`, `docs/guides/user/granting-write-access.md`, `docs/guides/user/auditing-repositories.md`; `CHANGELOG.md` if it has an unreleased section.
+- This record.
+
+## Verify
+
+- The default tests expect `~/workspaces` resolved against the home directory, for unset and blank values.
+- The gate in [Working on the code](../guides/developer/working-on-the-code.md#gates) passes: `ki repo audit --repo .`, `bun run test`, `bun run test:coverage` at 100%, `bun run ki:test:smoke`.
+- No guide or example names `~/dev` or describes the home-directory default.
+
 ## Dependencies / blocks
 
 Not blocked, and blocks nothing. The Kit Git Repo Audit artifact in Personal Principal is being regrounded in `~/workspaces` in parallel; it reads whatever safe roots the deployed configuration sets, not this repository's default.
+
+## Documentation impact
+
+### Decision Records
+
+None.
+
+### Specifications
+
+None; the repository keeps no specification for configuration defaults.
+
+### Guides
+
+The installing, granting-write-access and auditing guides and the guides index move to the `~/workspaces` layout.
+
+### Roadmap
+
+This record moves to Awaiting review at delivery.
 
 ## Discussion
 
 ### Default for a public package
 
 `~/workspaces` is the Knowledge Islands convention, not a universal one. Defaulting to it narrows reach for KI users and, for anyone else, starts from a root that may not exist. Decide whether a missing default root should fail clearly at startup, warn and fall back to `~`, or simply return empty scans, and say which in the installing guide.
+
+Decided under HIGH-APPLY, 20 October: a missing default root behaves exactly as a missing configured root does today. Scans return nothing and `git_repos_audit_roots` reports the root as missing; the server neither fails at startup nor falls back. Falling back to `~` would silently widen reach, which the change exists to narrow, and failing at startup would break an unconfigured install that a single setting fixes. The installing guide says so.
 
 ### Configured roots in the dotfiles
 
