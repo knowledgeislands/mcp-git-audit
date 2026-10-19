@@ -4,14 +4,13 @@ area: FND
 title: Ground roots in workspaces
 purpose: corrective
 kind: deliver
-horizon: now
-status: awaiting-review
+status: done
 size: s
 blocks: []
 blocked_by: []
 baseline_ref: 5e946c4e05b473eb7e43e0b5f10080a46a9f807f
 created_at: 2026-10-19T06:49:00Z
-updated_at: 2026-10-19T23:30:00Z
+updated_at: 2026-10-19T23:30:01Z
 ---
 
 # Ground roots in workspaces
@@ -113,7 +112,17 @@ The change narrows the unset default only; containment, authorisation and the ac
 
 Default root moved from `~` to `~/workspaces` with docs; missing-root behaviour reuses the existing empty-scan path, decided under HIGH-APPLY.
 
+## Done
+
+Accepted 2026-10-20 by Kris, under TO-DONE and the coordinator’s explicit acceptgit2 grant, on the review packet above.
+
 ## Discussion
+
+### Independent acceptance
+
+Independently verified by acceptgit2 on 20 October 2026 against delivery commit `6a48d6e` and baseline `5e946c4e05b473eb7e43e0b5f10080a46a9f807f`: `ki repo audit --repo .` passed with no failures and the two pre-existing OWN-1 and CLAUDEBIND-1 warnings; `bun run test` passed all 247 tests; `bun run test:coverage` passed at 100% for statements, branches, functions and lines; `bun run ki:test:smoke` passed. Exact assertions confirm the unset and blank defaults resolve `~/workspaces` against the home directory; the guides and examples contain neither `~/dev` nor the old home-directory default. Existing missing-root scan and batch-audit fixtures pass. The change meets the Goal and Boundary, with no acceptance concern.
+
+Closure authority: Kris’s TO-DONE decision of 20 October, recorded in `ki-principal/+/_WORK/ki.tools-burndown/decisions.md`, requires an independent accept pass. The coordinator’s 00:25 BST instruction for acceptgit2 explicitly says: “this run may accept and prune KI-MCP-GIT-FND-006 after its independent checks pass”. Pruning remains separate from acceptance: cross-repository preflight found live absolute links in two untracked reports belonging to other sessions in `ki-principal`, so the Done record is retained until their owner pins those links.
 
 ### Default for a public package
 
