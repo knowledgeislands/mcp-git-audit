@@ -68,9 +68,6 @@ auto_memory = "disabled"
 # Change management
 # -----------------------------------------------------------------------------
 
-[skills.ki-delegation-paperclip]
-organisation_code = "KIS"
-
 [skills.ki-git]
 
 [skills.ki-work]
