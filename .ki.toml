@@ -52,6 +52,8 @@ profile = "modern-v2-core"
 
 [skills.ki-env-binding-chatgpt]
 
+[skills.ki-env-housekeeping]
+
 [skills.ki-env-housekeeping-claude]
 auto_memory = "disabled"
 
