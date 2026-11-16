@@ -13,7 +13,7 @@ The Bun-install, Node-run split, the `bun test` trap and the `.env` parity rule 
 
 Run `bun run` with no args for the full script list.
 
-This server targets MCP specification revision **2025-11-25**.
+This server targets MCP specification revision **2026-07-28**.
 
 ## Architecture Invariants
 
