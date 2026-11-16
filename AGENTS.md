@@ -1,28 +1,13 @@
 # AGENTS.md
 
-## Runtime
-
-Use Bun (>= 1.3) for install, development, and tests; use `bun run test`, never `bun test`. The published `dist/` MCP runs under Node (>= 22). Keep `NODE_ENV=development` confined to dev and inspector commands; production configuration comes from the host environment.
-
-## MCP architecture
-
-Keep configuration injectable: no module-level environment reads or config singleton. The server loads config once and passes it to registration functions. Tool modules validate and adapt MCP envelopes only; implementation belongs in `src/main/` and receives the smallest config primitive it needs as its first argument. Keep reusable, config-agnostic helpers in `src/utils/`.
-
-Use snake_case `<app>_<resource>_<action>` tool names. Register through the annotation-driven access gate; every tool must use an explicit annotation preset. The access level controls visibility and never substitutes for effect-level safeguards.
-
-## Safety and tests
-
-Constrain every filesystem path to its configured root, including symlink-aware containment. Validate user-controlled identifiers with tight schemas. Invoke subprocesses through argv APIs, never shell strings. Mutating or non-idempotent tools require an explicit, default-true `dry_run` where applicable. Keep Zod schemas strict. Tests use isolated fixtures and never exercise real user roots.
-
-Keep user-facing installation, configuration, and tool reference in README; keep shared repository guidance here and only Claude-specific deltas in CLAUDE.md.
+Engineering follows `ki-engineering`, and the server's shape follows `ki-repo-mcp`: its layout, configuration injection, tool naming, annotation-driven access gate and security invariants, and where README and this file each hold what. The access level controls visibility and never substitutes for effect-level safeguards. Tests use isolated fixtures and never exercise real user roots.
 
 Repository-specific implementation guidance follows. User-facing setup and tool documentation live in [README.md](./README.md) and [docs/guides/](./docs/guides/README.md).
 
 ## Bun vs Node
 
-This project uses Bun (≥ 1.3) for install and dev scripts, but the compiled `dist/` runs under Node (≥ 22) — that's what Claude Desktop launches.
+The Bun-install, Node-run split, the `bun test` trap and the `.env` parity rule are `ki-engineering`'s. In this server:
 
-- `bun run test` (NOT `bun test` — the latter invokes Bun's own runner instead of vitest).
 - Bun auto-loads `.env.${NODE_ENV}` from the CWD; Node needs the explicit `process.loadEnvFile()` call inside `loadConfig()` in [src/config/index.ts](./src/config/index.ts). The try/catch swallows the `TypeError` Bun raises (no `process.loadEnvFile`), so the same code works under both.
 - `NODE_ENV` is set to `development` only by `ki:server:mcp:dev` and `ki:server:mcp:inspect`. Claude Desktop doesn't set it, so `.env.*` is ignored in production — `MCP_GIT_AUDIT_SAFE_ROOTS` must come from the Claude Desktop config `env` block.
 
