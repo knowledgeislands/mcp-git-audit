@@ -8,8 +8,8 @@
  *
  * Configuration (environment variables):
  *   MCP_GIT_AUDIT_SAFE_ROOTS    Colon-separated list of absolute (or ~/...) paths
- *                               that the tool is allowed to audit. Defaults to "~"
- *                               (the user's home directory) when unset or empty.
+ *                               that the tool is allowed to audit. Defaults to
+ *                               "~/workspaces" when unset or empty.
  *                               Any `root` argument must equal or live inside one of these.
  */
 
