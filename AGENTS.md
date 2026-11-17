@@ -4,52 +4,31 @@ Engineering follows `ki-engineering`, and the server's shape follows `ki-repo-mc
 
 Repository-specific implementation guidance follows. User-facing setup and tool documentation live in [README.md](./README.md) and [docs/guides/](./docs/guides/README.md).
 
-## Bun vs Node
-
-The Bun-install, Node-run split, the `bun test` trap and the `.env` parity rule are `ki-engineering`'s. In this server:
-
-- Bun auto-loads `.env.${NODE_ENV}` from the CWD; Node needs the explicit `process.loadEnvFile()` call inside `loadConfig()` in [src/config/index.ts](./src/config/index.ts). The try/catch swallows the `TypeError` Bun raises (no `process.loadEnvFile`), so the same code works under both.
-- `NODE_ENV` is set to `development` only by `ki:server:mcp:dev` and `ki:server:mcp:inspect`. Claude Desktop doesn't set it, so `.env.*` is ignored in production — `MCP_GIT_AUDIT_SAFE_ROOTS` must come from the Claude Desktop config `env` block.
-
-Run `bun run` with no args for the full script list.
-
 This server targets MCP specification revision **2026-07-28**.
 
 ## Architecture Invariants
 
-### Project layout & config injection (the workspace MCP shape)
+### Configuration and layers
 
-This is the canonical layout we roll out across the MCPs:
-
-- **[src/config/index.ts](./src/config/index.ts)** — `loadConfig(env?) → Config`. Reads env (optionally hydrated from `.env.${NODE_ENV}`) into a plain `Config` value (`safeRoots`, `accessLevel`, `auditLogMode`, `auditLogPath`, `auditLogMaxBytes`, `auditLogKeep`). **There is no module-level config singleton — nothing reads env at import time.** It also re-exports the shared types/constants (`AccessLevel`, `ACCESS_LEVELS`, `ACCESS_LEVEL_RANK`, `AuditLogMode`).
-- **[src/mcp-server/index.ts](./src/mcp-server/index.ts)** — the stdio MCP wrapper. Calls `loadConfig()` once, builds the audit slice, wires `server.registerTool = makeAccessGatedRegister(server, config.accessLevel, audit)`, and threads the `Config` into each `registerXxxTools(server, config)`. Excluded from coverage.
-- **[src/tools/](./src/tools/)** — MCP tool definitions only. Thin: validate args (zod), call a `main/` function passing `cfg.safeRoots`, map result/throw to an MCP envelope via `jsonResult`/`errorResult`. `src/tools/**/index.ts` is excluded from coverage — never put logic there.
-- **[src/main/](./src/main/)** — the real implementation, usable outside the MCP server (e.g. from a script). Grouped by concern, mirroring the tool groups: `main/repo-audit/` (`scan.ts`, `audit.ts`, `detail.ts`, `metadata.ts`, `summaries.ts` + an `index.ts` re-export), `main/repo-commit/` (`diff.ts`, `commit.ts` + `index.ts`), `main/repo-remotes/index.ts`, `main/repo-sync/index.ts`. Every `main` entry point that touches the filesystem takes `safeRoots: readonly string[]` as its **first argument** — `repoDetail(safeRoots, absPath, opts)`, `auditScanWithinRoots(safeRoots, scan, opts)`, `resolveGitMetadata(safeRoots, repoDir)`, `diffRepo(safeRoots, …)`, `commitRepo`, `listRemotes`/`setRemoteUrl`/`addRemote`/`removeRemote`, `fetchRepo`/`pullRepo`/`pushRepo`. `scanRoot`/`findRepos`/`auditScan`/`auditRepo` don't touch config and keep their existing signatures; `auditScan`/`auditRepo` trust their caller, so tools use `auditScanWithinRoots`.
-- **[src/utils/](./src/utils/)** — cross-MCP reusable helpers; keep in sync with sibling repos. These take the **specific config primitive** they need, not the whole `Config`: `resolveAgainstSafeRoots(input, safeRoots)`, `makeAccessGatedRegister(server, accessLevel, audit)`, `withAuditLog(audit, name, level, cb)`, `appendAuditEvent(audit, event)`. `audit` is the `AuditConfig` slice (`{ mode, path, maxBytes, keep }`). `SERVER_NAME` stays `'mcp-git-audit'`.
+- **[src/config/index.ts](./src/config/index.ts)** — `Config` carries `safeRoots` beside the standard fields, parsed from `MCP_GIT_AUDIT_SAFE_ROOTS` (colon-separated, default `~/workspaces`). A client that does not set `NODE_ENV` gets it from its `env` block or the package's `.env.local` or `.env`.
+- **[src/tools/](./src/tools/)** — each tool passes `cfg.safeRoots` to its `main/` function.
+- **[src/main/](./src/main/)** — grouped by concern, mirroring the tool groups: `main/repo-audit/` (`scan.ts`, `audit.ts`, `batch.ts`, `detail.ts`, `metadata.ts`, `summaries.ts` + an `index.ts` re-export), `main/repo-commit/` (`diff.ts`, `commit.ts` + `index.ts`), `main/repo-remotes/index.ts`, `main/repo-sync/index.ts`. Every `main` entry point that touches the filesystem takes `safeRoots: readonly string[]` as its **first argument** — `repoDetail(safeRoots, absPath, opts)`, `auditScanWithinRoots(safeRoots, scan, opts)`, `auditRootsWithinSafeRoots(safeRoots, roots, opts)`, `resolveGitMetadata(safeRoots, repoDir)`, `diffRepo(safeRoots, …)`, `commitRepo`, `listRemotes`/`setRemoteUrl`/`addRemote`/`removeRemote`, `fetchRepo`/`pullRepo`/`pushRepo`. `scanRoot`/`findRepos`/`auditScan`/`auditRepo` don't touch config and keep their existing signatures; `auditScan`/`auditRepo` trust their caller, so tools use `auditScanWithinRoots`.
+- **[src/utils/](./src/utils/)** — path checks go through `resolveAgainstSafeRoots(input, safeRoots)`. `SERVER_NAME` in [audit-log.ts](./src/utils/audit-log.ts) stays `'mcp-git-audit'`.
 
 To use the code from a script: `const cfg = loadConfig(); await diffRepo(cfg.safeRoots, '/abs/repo', { staged: false, max_lines: 500 })`.
 
 This dependency direction is enforced, not just described: [.dependency-cruiser.ts](./.dependency-cruiser.ts) states each boundary as a named rule and [src/boundaries.test.ts](./src/boundaries.test.ts) cruises the source graph and proves every rule still rejects a deliberate crossing. Tool modules may import only `main/*/index.ts`, `config/index.ts` and the envelope, annotation, path and identifier helpers in `utils/` (`annotations`, `errors`, `git-exec`, `paths`, `results`); `src/generated/` is the emitted client for external consumers and nothing in `src/` imports it. The checker runs from its own install root, `tooling/depcruise`, because dependency-cruiser needs a TypeScript below 7.
 
-### Naming convention
+### Tool surface
 
-Tool names follow `<app>_<resource>_<action>` (snake_case) with `<app>` = `git`. Plural resource for collection ops, singular for single-item ops. Current surface:
+The `<app>` prefix is `git`. Current surface:
 
 - **repo-audit** (read-only): `git_repos_scan`, `git_repos_audit`, `git_repos_audit_roots`, `git_repo_detail`.
 - **repo-commit**: `git_repo_diff` (read), `git_repo_commit` (destructive — non-idempotent: writes a new commit each call).
 - **repo-remotes**: `git_repo_remotes_list` (read), `git_repo_remote_set_url` (write/idempotent), `git_repo_remote_add` (write/additive), `git_repo_remote_remove` (destructive).
 - **repo-sync**: `git_repo_fetch` (write — open-world idempotent), `git_repo_pull` (destructive — open-world), `git_repo_push` (destructive — open-world).
 
-### Access-level gate — driven by annotations, not names
-
-[src/utils/access-level.ts](./src/utils/access-level.ts) `makeAccessGatedRegister(server, accessLevel, audit)` decides at startup whether to register each tool, based on `config.annotations`:
-
-- `readOnlyHint: true` → `read`
-- `destructiveHint: true` → `destructive`
-- explicit `readOnlyHint: false` AND `destructiveHint: false` → `write` (non-destructive mutation)
-- anything else (unannotated / partially annotated) → `destructive` (fail-safe)
-
-A tool registers when its derived level is at or below `MCP_GIT_AUDIT_ACCESS_LEVEL` (default: `read`). The audit-tool group is all `READ_ONLY`; the remotes, sync, and commit groups span `read` → `destructive` via the annotation presets in [src/utils/annotations.ts](./src/utils/annotations.ts) (`READ_ONLY`, `WRITE`, `WRITE_IDEMPOTENT`, `WRITE_IDEMPOTENT_REMOTE`, `DESTRUCTIVE`, `DESTRUCTIVE_REMOTE`, `DESTRUCTIVE_ONESHOT`). `DESTRUCTIVE_ONESHOT` is the right preset for tools whose effect depends on current FS / index state (running twice doesn't reach the same end state — `git_repo_commit` is the current example). The default `read` gate hides every mutation tool until the operator explicitly opts in via `MCP_GIT_AUDIT_ACCESS_LEVEL=write` or `=destructive`. New tools MUST set `annotations` explicitly to one of those presets — do not bypass the proxy.
+The gate is `MCP_GIT_AUDIT_ACCESS_LEVEL`, default `read`, which hides every mutation tool until the operator opts in. `git_repo_commit` is the `DESTRUCTIVE_ONESHOT` case: its effect depends on the current index, so running it twice does not reach the same end state.
 
 ### Three-stage pipeline
 
@@ -59,16 +38,15 @@ A tool registers when its derived level is at or below `MCP_GIT_AUDIT_ACCESS_LEV
 
 This server walks user-supplied filesystem trees and shells out to `git`. New tools and changes to existing tools MUST preserve every invariant below.
 
-1. **Every filesystem path runs through `resolveAgainstSafeRoots()`** from [src/utils/paths.ts](./src/utils/paths.ts) before any `fs.*` or `execFile` call. Two-layer check: lexical normalization plus `fs.realpath` of the deepest existing ancestor compared against the realpath of every safe root. Catches `..` traversal AND symlink escapes. New tools that take a path argument must validate against the **full** `cfg.safeRoots` set (threaded in as the first arg of the `main/` function), not a single root.
+1. **Every filesystem path runs through `resolveAgainstSafeRoots()`** from [src/utils/paths.ts](./src/utils/paths.ts) before any `fs.*` or `execFile` call, against the **full** `cfg.safeRoots` set.
 2. **Cached `scan` results are not trusted.** See [Three-stage pipeline](#three-stage-pipeline) above.
-3. **`git` invocation uses `execFile` with argv array, never shell strings.** `runGit()` (audit), `runGitDetail()` (detail), and `runGitCapture()` (remotes/sync) all call `execFile('git', ['--no-optional-locks', '-C', repo, ...args], opts)`. The `--no-optional-locks` flag is mandatory.
-4. **`git` calls are time- and memory-bounded.** Local-only commands use `GIT_LOCAL_TIMEOUT_MS` (8s) — except the `git_repo_detail` metadata read, which uses a deliberately shorter `DETAIL_TIMEOUT_MS` (6s); network commands (`fetch`, `pull`, `push`) use `GIT_NETWORK_TIMEOUT_MS` (60s). All capped by `maxBuffer`. Network-bound calls additionally set `GIT_TERMINAL_PROMPT=0` so an auth-required remote fails fast instead of hanging on a non-existent TTY. Optional metadata reads go through `tryRunGit()` which swallows errors. Never spawn an unbounded `git` call.
-5. **Directory walks are depth-limited.** `findRepos()` in [src/main/repo-audit/scan.ts](./src/main/repo-audit/scan.ts) enforces `maxDepth` and prunes hidden dirs + `node_modules`. New walkers must enforce a depth cap.
-6. **Identifier inputs that become argv tokens have tightened regex schemas.** Remote names, branch names, and remote URLs all use the validators in [src/utils/git-exec.ts](./src/utils/git-exec.ts): `remoteNameSchema`, `branchNameSchema`, `remoteUrlSchema`. Each rejects strings beginning with `-` (option-injection guard) and `..` sequences. New tools that accept user-supplied identifiers must reuse these schemas — bare `z.string().min(1)` is not acceptable.
-7. **Destructive tools require `dry_run` default `true`.** Every tool registered at the `destructive` level (`git_repo_pull`, `git_repo_push`, `git_repo_remote_remove`) and every non-idempotent mutating tool exposes `dry_run: boolean`, defaults to preview, and only mutates when explicitly disabled. Where git has a native `--dry-run` we pass it through; for `pull` we approximate by running `git fetch --dry-run` against the same remote/branch.
-8. **Force-push is gated behind an enum, not a boolean.** `git_repo_push` exposes `force_mode: 'none' | 'with_lease' | 'force'`. A boolean would be too easy to flip accidentally; the enum forces the caller to name what they want.
-9. **Zod schemas are `.strict()` with bounded numerics.** Already true; new schemas must continue this.
-10. **Per-repo failures don't crash the audit.** `git_repos_audit` aggregates errors into `errors[]`. This is a contract with downstream consumers — preserve it.
+3. **`git` runs only through three helpers:** `runGitCapture()` in [src/utils/git-exec.ts](./src/utils/git-exec.ts) (every caller outside the detail read, the audit's `runGit()`/`tryRunGit()` among them), and `runGitDetail()`/`tryRunGitDetail()` in [src/main/repo-audit/detail.ts](./src/main/repo-audit/detail.ts). Each prefixes `--no-optional-locks -C <repo>`.
+4. **`git` calls are time- and memory-bounded.** Local-only commands use `GIT_LOCAL_TIMEOUT_MS` (8s) — except the `git_repo_detail` reads, which use a deliberately shorter `DETAIL_TIMEOUT_MS` (6s); network commands (`fetch`, `pull`, `push`) use `GIT_NETWORK_TIMEOUT_MS` (60s). `runGitCapture()` sets `GIT_TERMINAL_PROMPT=0` on every call, after any caller override, so an auth-required remote fails fast. Optional metadata reads go through `tryRunGit()` or `tryRunGitDetail()`, which swallow errors.
+5. **Directory walks are depth-limited.** `findRepos()` in [src/main/repo-audit/scan.ts](./src/main/repo-audit/scan.ts) enforces `maxDepth` and prunes hidden dirs and `node_modules`.
+6. **Identifier inputs reuse the validators in [src/utils/git-exec.ts](./src/utils/git-exec.ts):** `remoteNameSchema`, `branchNameSchema`, `remoteUrlSchema`.
+7. **Every mutating tool but `git_repo_fetch` defaults `dry_run` to `true`:** `git_repo_commit`, `git_repo_pull`, `git_repo_push`, `git_repo_remote_add`, `git_repo_remote_set_url` and `git_repo_remote_remove`. `git_repo_fetch`'s `dry_run` defaults to `false` and passes `--dry-run` through. `push` passes git's native `--dry-run`; `pull`, which has none, runs `git fetch --dry-run` against the same remote and branch; `commit` runs `git commit --dry-run` against a temporary index, leaving the real index, HEAD and the object store unchanged.
+8. **Force-push is `git_repo_push`'s `force_mode: 'none' | 'with_lease' | 'force'`.**
+9. **Per-repo failures don't crash the audit.** `git_repos_audit` aggregates errors into `errors[]`. This is a contract with downstream consumers — preserve it.
 
 Traversal-rejection and command-injection-via-argv tests live in [src/utils/paths.test.ts](./src/utils/paths.test.ts), [src/utils/git-exec.test.ts](./src/utils/git-exec.test.ts), and the per-area `main/` tests (e.g. [src/main/repo-audit/detail.test.ts](./src/main/repo-audit/detail.test.ts), [src/main/repo-commit/commit.test.ts](./src/main/repo-commit/commit.test.ts)).
 
@@ -78,4 +56,4 @@ Test fixtures that exercise code which itself writes a commit (a rebase or commi
 
 ## Tool registration call sites
 
-Tools are registered in [src/tools/repo-audit/index.ts](./src/tools/repo-audit/index.ts), [src/tools/repo-commit/index.ts](./src/tools/repo-commit/index.ts), [src/tools/repo-remotes/index.ts](./src/tools/repo-remotes/index.ts), and [src/tools/repo-sync/index.ts](./src/tools/repo-sync/index.ts). To survey the surface, `grep "registerTool" src/tools/*/index.ts`. README's [Available Tools](./README.md#available-tools) tabulates them with purposes and I/O shapes.
+Tools are registered in [src/tools/repo-audit/index.ts](./src/tools/repo-audit/index.ts), [src/tools/repo-commit/index.ts](./src/tools/repo-commit/index.ts), [src/tools/repo-remotes/index.ts](./src/tools/repo-remotes/index.ts), and [src/tools/repo-sync/index.ts](./src/tools/repo-sync/index.ts). To survey the surface, `grep "registerTool" src/tools/*/index.ts`. README's [Available tools](./README.md#available-tools) tabulates them with purposes and I/O shapes.
