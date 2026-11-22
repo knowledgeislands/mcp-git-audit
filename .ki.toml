@@ -83,9 +83,3 @@ components = [
 [skills.ki-work-roadmap.areas]
 FND = "Engineering foundations"
 TOOL = "Tool surface"
-
-# -----------------------------------------------------------------------------
-# Relationships
-# -----------------------------------------------------------------------------
-
-[skills.ki-trades]
