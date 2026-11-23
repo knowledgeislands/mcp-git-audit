@@ -12,7 +12,7 @@ cd mcp-git-audit
 bun install
 ```
 
-`bun install` runs `prepare`, which installs the husky hooks. From then on every commit runs `lint-staged` — Biome over TypeScript, JavaScript and JSON, rumdl over Markdown, both with fixes applied — plus a `syncpack` format check, and `commitlint` over the message.
+`bun install` runs `prepare`, which points Git at the committed `.githooks/` hooks. From then on every commit runs `lint-staged` — Biome over TypeScript, JavaScript and JSON, rumdl over Markdown, both with fixes applied — plus a `syncpack` format check, and `commitlint` over the message.
 
 ## The loop
 
@@ -49,8 +49,6 @@ bun run ki:test:smoke
 Coverage thresholds are 100% on lines, functions, branches and statements, and they fail the build rather than warn. Two exclusions keep that honest rather than absurd: the stdio wrapper in `src/mcp-server/`, and the thin tool definitions in `src/tools/**/index.ts`. Both are wiring. If a change to a tool file needs a test to reach it, that is the signal that the logic belongs in `src/main/` instead — the exclusion is a design constraint, not an escape hatch.
 
 `ki:test:smoke` builds `dist/` and boots the real server over stdio to check that its wire-level tool surface matches what the in-process registration tests expect. It catches the class of mistake unit tests structurally cannot: a tool registered in a test harness but not in the built binary.
-
-> [!NOTE] The dev-loop list in `CONTRIBUTING.md` still names `bun run ki:lint:*` scripts. Those no longer exist; linting and type checking moved into `ki repo audit`. The commit and pull-request conventions in that file are current.
 
 ## Adding a tool
 
