@@ -13,20 +13,20 @@ bun install
 bun install --cwd tooling/depcruise
 ```
 
-`bun install` triggers `prepare` which configures the husky pre-commit hook — so every commit will auto-run `lint-staged` and format your changes. The second install provides the isolated module-boundary checker that `bun run test` drives.
+`bun install` triggers `prepare`, which points Git at the committed `.githooks/pre-commit` hook, so every commit runs `lint-staged` and the `syncpack` format check on what you stage. The second install provides the isolated module-boundary checker that `bun run test` drives.
 
 ## Dev loop
 
 ```bash
 bun run ki:server:mcp:dev      # bun --watch — runs the server from source
 bun run ki:server:mcp:inspect  # MCP Inspector against the TS source
-bun run ki:lint:types          # tsc --noEmit
-bun run test                # vitest (use `bun run test`, not `bun test`)
-bun run test:watch          # vitest in watch mode
-bun run test:coverage       # vitest with v8 coverage report
-bun run ki:lint:check          # Biome lint + format check
-bun run ki:lint:fix            # Biome auto-fix
-bun run ki:lint:md             # prettier + markdownlint for *.md
+bun run build                  # tsc build into dist/
+bun run test                   # vitest (use `bun run test`, not `bun test`)
+bun run test:watch             # vitest in watch mode
+bun run test:coverage          # vitest with v8 coverage report
+bun run ki:test:smoke          # build, then boot the server and check its tool surface
+ki repo audit --repo .         # the main gate: Biome, TypeScript, syncpack, knip, coverage, rumdl
+ki repo conform --repo .       # the safe fixes the audit can apply
 ```
 
 ## Conventions
@@ -34,7 +34,7 @@ bun run ki:lint:md             # prettier + markdownlint for *.md
 ### Code
 
 - **TypeScript ES modules** — `"type": "module"`, internal imports use `.js` extensions (e.g. `from './scan.js'`) so `tsc` emits valid JS.
-- **Layout**: config lives in `src/config/index.ts` (`loadConfig()` — no module-level env reads); the real implementation lives under `src/main/<area>/` and takes the `Config` slice it needs as its first argument; `src/tools/<area>/index.ts` holds thin tool defs; the stdio wrapper is `src/mcp-server/index.ts`. See CLAUDE.md → "Project layout & config injection".
+- **Layout**: config lives in `src/config/index.ts` (`loadConfig()` — no module-level env reads); the real implementation lives under `src/main/<area>/` and takes the `Config` slice it needs as its first argument; `src/tools/<area>/index.ts` holds thin tool defs; the stdio wrapper is `src/mcp-server/index.ts`. See AGENTS.md → "Configuration and layers".
 - **Arrow functions** for top-level declarations (`export const foo = () => …`).
 - **Strict path safety**: any tool argument that points at the filesystem must go through `resolveAgainstSafeRoots(...)` from `src/utils/paths.ts`, passing the configured `cfg.safeRoots`. Inputs that escape every configured safe root throw `not inside any configured safe_root`.
 - **`git` invocations**: shell out via `execFile` (never `exec`) with a hard per-call timeout. Errors are caught per-repo and aggregated into the result's `errors[]` rather than failing the whole call.
@@ -67,10 +67,9 @@ Add `!` for breaking changes (`feat!:` / `fix!:`) — bumps major.
 
 ## Before opening a PR
 
-- [ ] `bun run ki:lint:check` passes
-- [ ] `bun run ki:lint:types` passes
-- [ ] `bun run test:coverage` passes (no threshold failures)
+- [ ] `ki repo audit --repo .` reports no failures (it runs Biome, TypeScript, syncpack, knip and coverage)
+- [ ] `bun run ki:test:smoke` passes
 - [ ] Commit messages follow Conventional Commits
-- [ ] If you changed the `repo_audit` output shape, update `README.md`, `CLAUDE.md`, and the matching consumer artifact
+- [ ] If you changed the `repo_audit` output shape, update `README.md`, `AGENTS.md`, and the matching consumer artifact
 
 CI runs all of the above on every PR.
