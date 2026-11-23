@@ -2,7 +2,7 @@
 
 Engineering follows `ki-engineering`, and the server's shape follows `ki-repo-mcp`: its layout, configuration injection, tool naming, annotation-driven access gate and security invariants, and where README and this file each hold what. The access level controls visibility and never substitutes for effect-level safeguards. Tests use isolated fixtures and never exercise real user roots.
 
-Repository-specific implementation guidance follows. User-facing setup and tool documentation live in [README.md](./README.md) and [docs/guides/](./docs/guides/README.md).
+Repository-specific implementation guidance follows. User-facing setup and tool documentation live in [README.md](./README.md) and [docs/guides/](./docs/guides/_index.md).
 
 This server targets MCP specification revision **2026-07-28**.
 

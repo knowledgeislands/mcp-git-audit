@@ -1,6 +1,6 @@
 # Guides
 
-Practical instructions for `mcp-git-audit` — an MCP server that reports branch, working-tree, and upstream state across a tree of local git repositories, and can optionally perform git mutations. Guides answer **how**: what someone does, in what order, and how they know it worked. The reasoning behind the design lives in [the decision records](../decisions/README.md), and planned work in [the roadmap](../roadmap/).
+Practical instructions for `mcp-git-audit` — an MCP server that reports branch, working-tree, and upstream state across a tree of local git repositories, and can optionally perform git mutations. Guides answer **how**: what someone does, in what order, and how they know it worked. The reasoning behind the design lives in [the decision records](../decisions/_index.md), and planned work in [the roadmap](../roadmap/).
 
 ## Contents
 
@@ -26,7 +26,7 @@ The server is read-only until you say otherwise. `MCP_GIT_AUDIT_ACCESS_LEVEL` de
 | What is this and what can it do?      | [The README](../../README.md)                                 |
 | What exactly does each tool accept?   | The running server, via your MCP client's tool listing†        |
 | How do I do a given piece of work?    | These guides                                                  |
-| Why is it built this way?             | [Decision records](../decisions/README.md)                    |
+| Why is it built this way?             | [Decision records](../decisions/_index.md)                    |
 | What is planned or in flight?         | [The roadmap](../roadmap/)                                    |
 
 † Each tool's parameters, defaults, and descriptions are published by the server itself and rendered live by the client. This repository deliberately keeps no second, hand-maintained copy of them, because a transcribed schema drifts from the code that serves it.

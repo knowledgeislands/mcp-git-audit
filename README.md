@@ -49,10 +49,10 @@ There is no published package yet: install from source, wire the built `dist/mcp
 
 ## Documentation
 
-- [Guides](docs/guides/README.md) — the practical instructions, grouped by who needs them.
+- [Guides](docs/guides/_index.md) — the practical instructions, grouped by who needs them.
   - [User guides](docs/guides/user/README.md) — installing, auditing a tree, granting write access, troubleshooting.
   - [Developer guides](docs/guides/developer/README.md) — architecture, invariants, the local loop and its gates.
-- [Decision records](docs/decisions/README.md) — why the repository is arranged as it is.
+- [Decision records](docs/decisions/_index.md) — why the repository is arranged as it is.
 - [Roadmap](docs/roadmap/) — what is planned and in flight.
 - [`CONTRIBUTING.md`](./CONTRIBUTING.md) — commit conventions and what CI expects.
 - [`SECURITY.md`](./SECURITY.md) — the responsibility split, and how to report a vulnerability.
